@@ -1,0 +1,3 @@
+[submodule "EmbeddedArchitecture"]
+	path = EmbeddedArchitecture
+	url = https://github.com/gaboth22/EmbeddedArchitecture
