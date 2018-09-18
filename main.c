@@ -1,5 +1,7 @@
 #include "msp.h"
 #include "Application.h"
+#include "Assert.h"
+#include "Camera_OV264I2cAndSpiCom.h"
 #include "GpioGroup_MSP432.h"
 #include "GpioTable.h"
 #include "HardwareUtils.h"
@@ -11,6 +13,43 @@
 #include "Spi_Uscb1.h"
 #include "Pwm_ConfigurableTA0CCR1.h"
 #include "Pwm_ConfigurableTA0CCR2.h"
+#include "types.h"
+
+#include "utils.h"
+
+//static uint8_t versionId, productId;
+//
+//static void GetProductId(void *context, uint8_t byte)
+//{
+//    IGNORE(context);
+//
+//    productId = byte;
+//}
+//
+//static void GetVersionId(void *context, uint8_t byte)
+//{
+//    RECAST(i2c, context, I_I2c_t *);
+//    versionId = byte;
+//
+//    I2c_ReadByte(
+//            i2c,
+//            0x60,
+//            0x0B,
+//            GetProductId,
+//            i2c);
+//}
+//
+//static void StartModelRead(void *context)
+//{
+//    RECAST(i2c, context, I_I2c_t *);
+//
+//    I2c_ReadByte(
+//            i2c,
+//            0x60,
+//            0x0A,
+//            GetVersionId,
+//            i2c);
+//}
 
 void main(void)
 {
@@ -27,29 +66,40 @@ void main(void)
     Application_Init(&application, timerModule, gpioGroup);
 
     I_I2c_t *i2c = I2c_Uscb0_Init(timerModule);
-    I_Spi_t *spi = Spi_Uscb1_Init();
+    I_Spi_t *spi = Spi_Uscb1_Init(gpioGroup, GpioSpiCs);
 
     I_Pwm_t *pwm1 = Pwm_ConfigurableTA0CCR1_Init(GpioPwmForward1);
     I_Pwm_t *pwm2 = Pwm_ConfigurableTA0CCR2_Init(GpioPwmForward2);
 
     EnableInterrupts();
 
-    Pwm_SetDutyCycle(pwm1, 25);
-    Pwm_SetDutyCycle(pwm2, 25);
+    Camera_OV264I2cAndSpiCom_t camera;
+    Camera_OV264I2cAndSpi_Init(&camera, i2c, spi, GpioSpiCs, timerModule);
 
-    // Dummy delay to see the PWM signal before it changes
-    uint64_t i = 0;
-    for(i = 0; i < 10000000; i++);
+    Camera_StartImageCapture(&camera.interface);
 
-    Pwm_ChangePortMap(pwm1, GpioPwmBackward1);
-    Pwm_ChangePortMap(pwm2, GpioPwmBackward2);
-
-    Pwm_SetDutyCycle(pwm1, 70);
-    Pwm_SetDutyCycle(pwm2, 70);
+//    I2c_WriteByte(
+//            i2c,
+//            0x60,
+//            0xFF,
+//            0x01,
+//            StartModelRead,
+//            i2c);
 
     while(1)
     {
         TimerModule_Run(timerModule);
         Application_Run(&application);
+    }
+}
+
+void Assert(bool condition)
+{
+    if(!condition)
+    {
+        while(1)
+        {
+            __no_operation();
+        }
     }
 }
