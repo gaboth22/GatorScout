@@ -12,14 +12,17 @@ typedef enum
     HOW(GpioHeartbeatLed,       0,  1, 0, GpioMode_Output) \
     HOW(GpioI2cSda,             1,  1, 6, GpioMode_Output) \
     HOW(GpioI2cScl,             2,  1, 7, GpioMode_Output) \
-    HOW(GpioPwmForward1,        3,  2, 4, GpioMode_Output) \
-    HOW(GpioPwmForward2,        4,  2, 5, GpioMode_Output) \
-    HOW(GpioPwmBackward1,       5,  2, 6, GpioMode_Output) \
-    HOW(GpioPwmBackward2,       6,  2, 7, GpioMode_Output) \
-    HOW(GpioSpiCs,              7,  6, 2, GpioMode_Output) \
-    HOW(GpioSpiClk,             8,  6, 3, GpioMode_Output) \
-    HOW(GpioSpiMosi,            9,  6, 4, GpioMode_Output) \
-    HOW(GpioSpiMiso,            10, 6, 5, GpioMode_Input)  \
+    HOW(GpioPwm1_P2B4,          3,  2, 4, GpioMode_Output) \
+    HOW(GpioPwm2_P2B5,          4,  2, 5, GpioMode_Output) \
+    HOW(GpioPwm3_P2B6,          5,  2, 6, GpioMode_Output) \
+    HOW(GpioPwm4_P2B7,          6,  2, 7, GpioMode_Output) \
+    HOW(GpioWheelEncoder1,      7,  3, 2, GpioMode_Input)  \
+    HOW(GpioWheelEncoder2,      8,  3, 3, GpioMode_Input)  \
+    HOW(GpioSpiCs,              9,  6, 2, GpioMode_Output) \
+    HOW(GpioSpiClk,             10, 6, 3, GpioMode_Output) \
+    HOW(GpioSpiMosi,            11, 6, 4, GpioMode_Output) \
+    HOW(GpioSpiMiso,            12, 6, 5, GpioMode_Input)  \
+
 
 #define EXPAND_AS_ENUM(_gpioName, _index, _port, _bit, _initialMode) \
     _gpioName = _index, \
