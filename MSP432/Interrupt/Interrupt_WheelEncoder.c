@@ -31,7 +31,6 @@ static const InterruptApi_t api2 =
 
 I_Interrupt_t * Interrupt_WheelEncoder_Init(GpioChannel_t gpioChannel)
 {
-
     NVIC->ISER[1] = 1 << ((PORT3_IRQn) & 31);
     P3->SEL0  = 0;
     P3->SEL1 = 0;
