@@ -3,6 +3,6 @@
 
 #include "types.h"
 
-void Assert(bool condition);
+extern void Assert(bool condition);
 
 #endif

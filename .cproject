@@ -58,6 +58,7 @@
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/MSP432/Pwm"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/MSP432/Spi"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/MSP432/TimeSource"/>
+									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/MSP432/Uart"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/MSP432/Utilities"/>
 								</option>
 								<option id="com.ti.ccstudio.buildDefinitions.MSP432_18.1.compilerID.DEBUGGING_MODEL.194370542" name="Debugging model" superClass="com.ti.ccstudio.buildDefinitions.MSP432_18.1.compilerID.DEBUGGING_MODEL" useByScannerDiscovery="false" value="com.ti.ccstudio.buildDefinitions.MSP432_18.1.compilerID.DEBUGGING_MODEL.SYMDEBUG__DWARF" valueType="enumerated"/>
@@ -207,4 +208,5 @@
 		<project id="GatorScout.com.ti.ccstudio.buildDefinitions.MSP432.ProjectType.948231787" name="MSP432" projectType="com.ti.ccstudio.buildDefinitions.MSP432.ProjectType"/>
 	</storageModule>
 	<storageModule moduleId="scannerConfiguration"/>
+	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
 </cproject>
