@@ -128,7 +128,7 @@ static inline void UCB0_Init(void)
             EUSCI_B_CTLW0_MST |             // I2C master mode
             EUSCI_B_CTLW0_SYNC |            // Sync mode
             EUSCI_B_CTLW0_SSEL__SMCLK;      // SMCLK
-    EUSCI_B0->BRW = 4800; // baudrate = SMCLK / 4800 - 100 KHz
+    EUSCI_B0->BRW = 480; // baudrate = SMCLK / 480 = 100 KHz
     EUSCI_B0->CTLW0 &= ~EUSCI_B_CTLW0_SWRST;// clear reset register
     EUSCI_B0->IE |= EUSCI_B_IE_TXIE0 | EUSCI_B_IE_NACKIE; // Enable transmit interrupt
 }

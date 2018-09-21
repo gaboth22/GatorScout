@@ -86,13 +86,11 @@ I_Spi_t * Spi_Uscb1_Init(I_GpioGroup_t *gpioGroup, GpioChannel_t csChannel)
     EUSCI_B1->CTLW0 = EUSCI_B_CTLW0_SWRST | // Remain in reset state
         EUSCI_B_CTLW0_MST |    // SPI master
         EUSCI_B_CTLW0_SYNC |   // Synchronous mode
-        //EUSCI_B_CTLW0_MODE_2 | // 4-pin mode
         EUSCI_B_CTLW0_MODE_0 | // 3-pin mode
         EUSCI_B_CTLW0_MSB |    // MSB first
-        //EUSCI_B_CTLW0_STEM |   // Auto trigger CS
         EUSCI_B_CTLW0_SSEL__SMCLK; // SMCLK as source
 
-    EUSCI_B1->BRW = 96; // SMCLK / 96 = 500 KHz
+    EUSCI_B1->BRW = 48; // SMCLK / 48 = 1 MHz
     EUSCI_B1->CTLW0 &= ~EUSCI_B_CTLW0_SWRST; // Enable module for operation
 
     NVIC->ISER[0] = 1 << ((EUSCIB1_IRQn) & 31);
