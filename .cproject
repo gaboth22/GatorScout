@@ -44,6 +44,7 @@
 									<listOptionValue builtIn="false" value="${CCS_BASE_ROOT}/arm/include/CMSIS"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}"/>
 									<listOptionValue builtIn="false" value="${CG_TOOL_ROOT}/include"/>
+									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/EmbeddedArchitecture/Architecture/Controllers"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/EmbeddedArchitecture/Architecture/DataStructures"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/EmbeddedArchitecture/Architecture/Event"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/EmbeddedArchitecture/Architecture/HardwareAbstractions"/>
