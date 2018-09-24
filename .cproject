@@ -40,12 +40,14 @@
 								</option>
 								<option id="com.ti.ccstudio.buildDefinitions.MSP432_18.1.compilerID.INCLUDE_PATH.1490347744" name="Add dir to #include search path (--include_path, -I)" superClass="com.ti.ccstudio.buildDefinitions.MSP432_18.1.compilerID.INCLUDE_PATH" valueType="includePath">
 									<listOptionValue builtIn="false" value="${CCS_BASE_ROOT}/arm/include"/>
-									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/MSP432"/>
 									<listOptionValue builtIn="false" value="${CCS_BASE_ROOT}/arm/include/CMSIS"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}"/>
 									<listOptionValue builtIn="false" value="${CG_TOOL_ROOT}/include"/>
-									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/EmbeddedArchitecture/Architecture/Controllers"/>
+									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/MSP432"/>
+									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/MSP432/driverlib"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/EmbeddedArchitecture/Architecture/DataStructures"/>
+									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/MSP432/Dma"/>
+									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/EmbeddedArchitecture/Architecture/Controllers"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/EmbeddedArchitecture/Architecture/Event"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/EmbeddedArchitecture/Architecture/HardwareAbstractions"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/EmbeddedArchitecture/Architecture/Input"/>
