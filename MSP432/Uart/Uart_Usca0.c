@@ -1,5 +1,5 @@
 #include "Uart_Usca0.h"
-#include "Assert.h"
+#include "Uassert.h"
 #include "Event_Synchronous.h"
 #include "types.h"
 #include "utils.h"
@@ -9,7 +9,6 @@ typedef struct
 {
     I_Uart_t interface;
     Event_Synchronous_t onByteReceived;
-    bool received;
     uint8_t receivedByte;
 } Uart_Usca0_t;
 
@@ -28,20 +27,9 @@ static I_Event_t * GetOnByteReceivedEvent(I_Uart_t *_instance)
     return &instance.onByteReceived.interface;
 }
 
-static void Run(I_Uart_t *_instance)
-{
-    IGNORE(_instance);
-
-    if(instance.received)
-    {
-        instance.received = false;
-        Event_Publish(&instance.onByteReceived.interface, &instance.receivedByte);
-    }
-}
-
 static void UpdateBaud(I_Uart_t *_instance, Baud_t baud)
 {
-    Assert((baud == 115200));
+    Uassert((baud == 115200));
 
     IGNORE(_instance);
     EUSCI_A0->IE &= ~(EUSCI_A_IE_RXIE);      // disable USCI_A0 RX interrupt
@@ -54,8 +42,20 @@ static void UpdateBaud(I_Uart_t *_instance, Baud_t baud)
     EUSCI_A0->IE |= EUSCI_A_IE_RXIE;         // Enable USCI_A0 RX interrupt
 }
 
+static void DisableRx(I_Uart_t *_instance)
+{
+    IGNORE(_instance);
+    EUSCI_A0->IE &= ~EUSCI_A_IE_RXIE;       // Disable USCI_A0 RX interrupt
+}
+
+static void EnableRx(I_Uart_t *_instance)
+{
+    IGNORE(_instance);
+    EUSCI_A0->IE |= EUSCI_A_IE_RXIE;        // Enable USCI_A0 RX interrupt
+}
+
 static const UartApi_t api =
-    { SendByte, GetOnByteReceivedEvent, Run, UpdateBaud };
+    { SendByte, GetOnByteReceivedEvent, UpdateBaud, DisableRx, EnableRx };
 
 I_Uart_t * Uart_Usca0_Init(void)
 {
@@ -72,7 +72,7 @@ I_Uart_t * Uart_Usca0_Init(void)
     EUSCI_A0->IFG &= ~EUSCI_A_IFG_RXIFG;    // Clear eUSCI RX interrupt flag
     EUSCI_A0->IE |= EUSCI_A_IE_RXIE;        // Enable USCI_A0 RX interrupt
 
-    NVIC->ISER[0] = 1 << ((EUSCIA0_IRQn) & 31);
+    NVIC->ISER[0] |= 1 << ((EUSCIA0_IRQn) & 31);
 
     return &instance.interface;
 }
@@ -82,6 +82,6 @@ void EUSCIA0_IRQHandler(void)
     if (EUSCI_A0->IFG & EUSCI_A_IFG_RXIFG)
     {
         instance.receivedByte = EUSCI_A0->RXBUF;
-        instance.received = true;
+        Event_Publish(&instance.onByteReceived.interface, &instance.receivedByte);
     }
 }

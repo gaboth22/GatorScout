@@ -1,6 +1,6 @@
 #include "msp.h"
 #include "Application.h"
-#include "Assert.h"
+#include "Uassert.h"
 #include "EventSubscriber_Synchronous.h"
 #include "GpioGroup_MSP432.h"
 #include "GpioTable.h"
@@ -11,8 +11,6 @@
 #include "MotorController.h"
 #include "TimeSource_1MsSystemTick.h"
 #include "TimerModule.h"
-#include "I2c_Uscb0.h"
-#include "Spi_Uscb1.h"
 #include "Pwm_TA0CCR1.h"
 #include "Pwm_TA0CCR2.h"
 #include "Pwm_TA0CCR3.h"
@@ -20,10 +18,23 @@
 #include "PidController.h"
 #include "types.h"
 #include "utils.h"
+#include "Camera_SpinelVC0706.h"
+#include "Uart_Usca0.h"
+#include "Uart_Usca3.h"
+#include "DmaController_MSP432.h"
+#include "ImageForwardingController.h"
+#include "CommunicationArbiter.h"
+#include "uart.h"
 
-volatile int testCount;
-volatile int direction;
-volatile bool runDone;
+static bool start;
+
+static void StartImageCap(void *context)
+{
+    IGNORE(context);
+    start = true;
+}
+
+static uint8_t image[4096] = { 0 };
 
 void main(void)
 {
@@ -53,7 +64,6 @@ void main(void)
     I_Pwm_t *rightFwd = Pwm_TA0CCR4_Init(GpioPwm4_P2B7);
 
     MotorController_t motorController;
-
     MotorController_Init(
         &motorController,
         Interrupt_GetOnInterruptEvent(leftPinInterruptWheelEncoder),
@@ -64,6 +74,38 @@ void main(void)
         rightBwd,
         &leftPid,
         &rightPid);
+
+    I_Uart_t *uart = Uart_Usca0_Init();
+    I_DmaController_t *dma = DmaController_MSP432_Init();
+    I_Uart_t *wifiUart = Uart_Usca3_Init();
+
+    Camera_SpinelVC0706_t cam;
+    Camera_SpinelVC076_Init(
+            &cam,
+            uart,
+            dma,
+            DmaChannel_UartUsca0Rx,
+            timerModule,
+            (void *) UART_getReceiveBufferAddressForDMA(EUSCI_A0_BASE),
+            image);
+
+    ImageForwardingController_t imgFwdController;
+    ImageForwardingController_Init(
+            &imgFwdController,
+            Camera_GetOnImageCaptureDoneEvent(&cam.interface),
+            wifiUart,
+            dma,
+            DmaChannel_UartUsca3Tx,
+            (void *) UART_getTransmitBufferAddressForDMA(EUSCI_A3_BASE));
+
+    CommunicationArbiter_t arbiter;
+    CommunicationArbiter_Init(&arbiter, &cam.interface, wifiUart, ImageForwardingController_GetOnImageForwardedEvent(&imgFwdController));
+
+    start = false;
+
+    TimerOneShot_t timer;
+    TimerOneShot_Init(&timer, timerModule, 8000, StartImageCap, &cam);
+    TimerOneShot_Start(&timer);
 
     EnableInterrupts();
 
@@ -76,11 +118,16 @@ void main(void)
         TimerModule_Run(timerModule);
         Application_Run(&application);
         MotorController_Run(&motorController);
+        if(start)
+        {
+            Camera_SpinelVC076_Run(&cam);
+            ImageForwardingController_Run(&imgFwdController);
+            CommunicationArbiter_Run(&arbiter);
+        }
     }
 }
 
-
-void Assert(bool condition)
+void Uassert(bool condition)
 {
     if(!condition)
     {
