@@ -42,10 +42,6 @@ I_Interrupt_t * Interrupt_WheelEncoder_Init(GpioChannel_t gpioChannel)
 
         pinInterruptWheelEncoder1.api = &api1;
 
-//        P3->REN |= BIT2; // Enable pull down resistor
-//        P3->REN &= ~BIT2; // disable pull down or pull up resistor
-//        P3->IES |= BIT2; // Selects interrupt edge for I/O pin (high to low transition)
-//        P3->IES &= ~BIT2; // Selects interrupt edge for I/O pin (low to high)
         P3->IFG &= ~BIT2;    // Clear interrupt flags
         P3->IE |= BIT2;  // Enable interrupt on p3.2 (enable on main?)
 
@@ -57,10 +53,6 @@ I_Interrupt_t * Interrupt_WheelEncoder_Init(GpioChannel_t gpioChannel)
 
         pinInterruptWheelEncoder2.api = &api2;
 
-//        P3->REN |= BIT3; // Enable pull down resistor
-//        P3->REN &= ~BIT3; // disable pull down or pull down resistor
-//        P3->IES |= BIT3; // Selects interrupt edge for I/O pin (high to low transition)
-//        P3->IES &= ~BIT3; // Selects interrupt edge for I/O pin (low to high )
         P3->IFG &= ~BIT3;    // Clear interrupt flags
         P3->IE |= BIT3;  // Enable interrupt on p3.2 (enable on main?)
 
