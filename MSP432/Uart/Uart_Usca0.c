@@ -45,14 +45,12 @@ static void UpdateBaud(I_Uart_t *_instance, Baud_t baud)
 static void DisableRx(I_Uart_t *_instance)
 {
     IGNORE(_instance);
-    EUSCI_A0->IFG &= ~EUSCI_A_IFG_RXIFG;    // Clear eUSCI RX interrupt flag
     EUSCI_A0->IE &= ~EUSCI_A_IE_RXIE;       // Disable USCI_A0 RX interrupt
 }
 
 static void EnableRx(I_Uart_t *_instance)
 {
     IGNORE(_instance);
-    EUSCI_A0->IFG &= ~EUSCI_A_IFG_RXIFG;    // Clear eUSCI RX interrupt flag
     EUSCI_A0->IE |= EUSCI_A_IE_RXIE;        // Enable USCI_A0 RX interrupt
 }
 
@@ -74,7 +72,7 @@ I_Uart_t * Uart_Usca0_Init(void)
     EUSCI_A0->IFG &= ~EUSCI_A_IFG_RXIFG;    // Clear eUSCI RX interrupt flag
     EUSCI_A0->IE |= EUSCI_A_IE_RXIE;        // Enable USCI_A0 RX interrupt
 
-    NVIC->ISER[0] = 1 << ((EUSCIA0_IRQn) & 31);
+    NVIC->ISER[0] |= 1 << ((EUSCIA0_IRQn) & 31);
 
     return &instance.interface;
 }

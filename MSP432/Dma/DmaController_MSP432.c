@@ -20,7 +20,7 @@ typedef struct
 } DmaControlTable_t;
 
 #pragma DATA_ALIGN(MSP432ControlTable, 1024)
-static DmaControlTable_t MSP432ControlTable[32];
+static DmaControlTable_t MSP432ControlTable[1024];
 
 typedef struct
 {
@@ -137,6 +137,7 @@ static void SetAndStartChannelTrasfer(
 
             DMA_assignInterrupt(INT_DMA_INT1, 1);
             DMA_clearInterruptFlag(DMA_CH1_EUSCIA0RX & 0x0F);
+            DMA_enableChannel(1);
             NVIC->ISER[1] |= (1 << ((DMA_INT1_IRQn) & 31));
             break;
         }
@@ -157,6 +158,7 @@ static void SetAndStartChannelTrasfer(
 
             DMA_assignInterrupt(INT_DMA_INT2, 6);
             DMA_clearInterruptFlag(DMA_CH6_EUSCIA3TX & 0x0F);
+            DMA_enableChannel(6);
             NVIC->ISER[1] |= (1 << ((DMA_INT2_IRQn) & 31));
             break;
         }
@@ -173,8 +175,6 @@ I_DmaController_t * DmaController_MSP432_Init(void)
 {
     DMA_enableModule();
     DMA_setControlBase(MSP432ControlTable);
-    DMA_enableChannel(1);
-    DMA_enableChannel(6);
     Event_Synchronous_Init(&instance.onUartUsca0TrxDone);
     Event_Synchronous_Init(&instance.onUartUsca3TrxDone);
     instance.uartUsca0ChannelTrxSize = 0;
@@ -213,8 +213,6 @@ void DMA_INT1_IRQHandler(void)
             break;
         case 4:
             DMA_clearInterruptFlag(1);
-            DMA_disableInterrupt(INT_DMA_INT1);
-            NVIC->ISER[1] &= ~(1 << ((DMA_INT1_IRQn) & 31));
             instance.uartUsca0ChannelDmaChunkCount = 0;
             Event_Publish(&instance.onUartUsca0TrxDone.interface, NULL);
             break;
@@ -245,15 +243,13 @@ void DMA_INT2_IRQHandler(void)
             DMA_setChannelTransfer(
               (DMA_CH6_EUSCIA3TX | UDMA_PRI_SELECT),
               UDMA_MODE_BASIC,
-              (void *) (((uint8_t *)instance.uartUsca0ChannelDst) + instance.uartUsca0ChannelDmaChunkCount * MaxDmaTrxSize),
+              (void *) (((uint8_t *)instance.uartUsca0ChannelDst) + instance.uartUsca3ChannelDmaChunkCount * MaxDmaTrxSize),
               instance.uartUsca3ChannelDst,
               instance.uartUsca3ChannelTrxSize % MaxDmaTrxSize);
             DMA_enableChannel(6);
             break;
         case 4:
             DMA_clearInterruptFlag(6);
-            DMA_disableInterrupt(INT_DMA_INT2);
-            NVIC->ISER[1] &= ~(1 << ((DMA_INT2_IRQn) & 31));
             instance.uartUsca3ChannelDmaChunkCount = 0;
             Event_Publish(&instance.onUartUsca3TrxDone.interface, NULL);
             break;
