@@ -31,7 +31,8 @@ static const InterruptApi_t api2 =
 
 I_Interrupt_t * Interrupt_WheelEncoder_Init(GpioChannel_t gpioChannel)
 {
-    NVIC->ISER[1] = 1 << ((PORT3_IRQn) & 31);
+    NVIC->ISER[1] |= (1 << ((PORT3_IRQn) & 31));
+
     P3->SEL0  = 0;
     P3->SEL1 = 0;
 
@@ -41,10 +42,8 @@ I_Interrupt_t * Interrupt_WheelEncoder_Init(GpioChannel_t gpioChannel)
 
         pinInterruptWheelEncoder1.api = &api1;
 
-        P3->REN = BIT2; // Enable pull down resistor
-        P3->IES = BIT2; // Selects interrupt edge for I/O pin (high to low transition)
         P3->IFG &= ~BIT2;    // Clear interrupt flags
-        P3->IE = BIT2;  // Enable interrupt on p3.2 (enable on main?)
+        P3->IE |= BIT2;  // Enable interrupt on p3.2 (enable on main?)
 
         return &pinInterruptWheelEncoder1;
     }
@@ -54,10 +53,8 @@ I_Interrupt_t * Interrupt_WheelEncoder_Init(GpioChannel_t gpioChannel)
 
         pinInterruptWheelEncoder2.api = &api2;
 
-        P3->REN = BIT3; // Enable pull down resistor
-        P3->IES = BIT3; // Selects interrupt edge for I/O pin (high to low transition)
         P3->IFG &= ~BIT3;    // Clear interrupt flags
-        P3->IE = BIT3;  // Enable interrupt on p3.2 (enable on main?)
+        P3->IE |= BIT3;  // Enable interrupt on p3.2 (enable on main?)
 
         return &pinInterruptWheelEncoder2;
     }
