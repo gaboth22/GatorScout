@@ -25,6 +25,7 @@
 #include "ImageForwardingController.h"
 #include "CommunicationArbiter.h"
 #include "uart.h"
+#include "RemoteMotionController.h"
 
 static bool start;
 
@@ -98,8 +99,17 @@ void main(void)
             DmaChannel_UartUsca3Tx,
             (void *) UART_getTransmitBufferAddressForDMA(EUSCI_A3_BASE));
 
+    RemoteMotionController_t remoteMotionController;
+    RemoteMotionController_Init(&remoteMotionController, &motorController, wifiUart);
+
     CommunicationArbiter_t arbiter;
-    CommunicationArbiter_Init(&arbiter, &cam.interface, wifiUart, ImageForwardingController_GetOnImageForwardedEvent(&imgFwdController));
+    CommunicationArbiter_Init(
+        &arbiter,
+        &cam.interface,
+        wifiUart,
+        ImageForwardingController_GetOnImageForwardedEvent(&imgFwdController),
+        &remoteMotionController,
+        timerModule);
 
     start = false;
 
@@ -109,20 +119,18 @@ void main(void)
 
     EnableInterrupts();
 
-//    MotorController_Forward(&motorController, 75*2);
-    MotorController_TurnRight(&motorController, 100);
-//    MotorController_TurnLeft(&motorController, 90);
-
     while(1)
     {
         TimerModule_Run(timerModule);
         Application_Run(&application);
         MotorController_Run(&motorController);
+
         if(start)
         {
             Camera_SpinelVC076_Run(&cam);
             ImageForwardingController_Run(&imgFwdController);
             CommunicationArbiter_Run(&arbiter);
+            RemoteMotionController_Run(&remoteMotionController);
         }
     }
 }
