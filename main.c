@@ -25,6 +25,8 @@
 #include "ImageForwardingController.h"
 #include "CommunicationArbiter.h"
 #include "uart.h"
+#include "Adc_Precision14.h"
+#include "DistanceSensor_SharpGP2Y0A41SK0F.h"
 
 static bool start;
 
@@ -107,6 +109,10 @@ void main(void)
     TimerOneShot_Init(&timer, timerModule, 8000, StartImageCap, &cam);
     TimerOneShot_Start(&timer);
 
+    I_Adc_t *adc14 = Adc_Precision14_Init();
+    DistanceSensor_SharpGP2Y0A41SK0F_t irSensor;
+    DistanceSensor_SharpGP2Y0A41SK0F_Init(&irSensor, adc14);
+
     EnableInterrupts();
 
 //    MotorController_Forward(&motorController, 75*2);
@@ -124,6 +130,9 @@ void main(void)
             ImageForwardingController_Run(&imgFwdController);
             CommunicationArbiter_Run(&arbiter);
         }
+
+        DistanceInCm_t test = DistanceSensor_GetDistanceInCm(&irSensor.interface);
+        __no_operation();
     }
 }
 
