@@ -21,12 +21,14 @@ typedef enum
     HOW(GpioWheelEncoder1,      9,  3, 2, GpioMode_Input)  \
     HOW(GpioWheelEncoder2,      10, 3, 3, GpioMode_Input)  \
     HOW(GpioIrSensorInput,      11, 4, 7, GpioMode_Input)  \
-    HOW(GpioSpiCs,              12, 6, 2, GpioMode_Output) \
-    HOW(GpioSpiClk,             13, 6, 3, GpioMode_Output) \
-    HOW(GpioSpiMosi,            14, 6, 4, GpioMode_Output) \
-    HOW(GpioSpiMiso,            15, 6, 5, GpioMode_Input)  \
-    HOW(GpioUartUsca3Rx,        16, 9, 6, GpioMode_Input)  \
-    HOW(GpioUartUsca3Tx,        17, 9, 7, GpioMode_Output) \
+    HOW(GpioUltraSonicEcho,     12, 5, 0, GpioMode_Input)  \
+    HOW(GpioSpiCs,              13, 6, 2, GpioMode_Output) \
+    HOW(GpioSpiClk,             14, 6, 3, GpioMode_Output) \
+    HOW(GpioSpiMosi,            15, 6, 4, GpioMode_Output) \
+    HOW(GpioSpiMiso,            16, 6, 5, GpioMode_Input)  \
+    HOW(GpioUltraSonic_P7B1,    17, 7, 1, GpioMode_Output) \
+    HOW(GpioUartUsca3Rx,        18, 9, 6, GpioMode_Input)  \
+    HOW(GpioUartUsca3Tx,        19, 9, 7, GpioMode_Output) \
 
 #define EXPAND_AS_ENUM(_gpioName, _index, _port, _bit, _initialMode) \
     _gpioName = _index, \
