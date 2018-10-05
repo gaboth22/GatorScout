@@ -21,23 +21,24 @@
 #include "Camera_SpinelVC0706.h"
 #include "Uart_Usca0.h"
 #include "Uart_Usca3.h"
-#include "UltraSonic.h"
+//#include "UltraSonic.h"
 #include "DmaController_MSP432.h"
 #include "ImageForwardingController.h"
 #include "CommunicationArbiter.h"
 #include "uart.h"
 #include "Adc_Precision14.h"
 #include "DistanceSensor_SharpGP2Y0A41SK0F.h"
+#include "UltrasonicSensorCommon.h"
 
 static bool start;
 
-static void StartImageCap(void *context)
-{
-    IGNORE(context);
-    start = true;
-}
-
-static uint8_t image[4096] = { 0 };
+//static void StartImageCap(void *context)
+//{
+//    IGNORE(context);
+//    start = true;
+//}
+//
+//static uint8_t image[4096] = { 0 };
 
 void main(void)
 {
@@ -52,8 +53,8 @@ void main(void)
     TimerModule_t *timerModule = TimerModule_Init(oneMsTimeSource);
     I_GpioGroup_t *gpioGroup = GpioGroup_MSP432_Init();
 
-    UltraSonic_t ultraSonicFront;
-    UltraSonic_Init(&ultraSonicFront, timerModule, 10);
+//    UltraSonic_t ultraSonicFront;
+//    UltraSonic_Init(&ultraSonicFront, timerModule, 10);
 
 //    PidController_t rightPid;
 //    PidController_Init(&rightPid, 1, 0, 0.0, 30, 100); //working
@@ -117,6 +118,8 @@ void main(void)
     DistanceSensor_SharpGP2Y0A41SK0F_t irSensor;
     DistanceSensor_SharpGP2Y0A41SK0F_Init(&irSensor, adc14);
 
+    UltrasonicSensorCommon_t *ultrasonicCommon =  UltrasonicSensorCommon_Init(timerModule);
+
     EnableInterrupts();
 
 //    MotorController_Forward(&motorController, 75*2);
@@ -128,8 +131,8 @@ void main(void)
         TimerModule_Run(timerModule);
         Application_Run(&application);
 //        MotorController_Run(&motorController);
-        uint32_t ultraSonicCheck = UltraSonic_GetUltraSonicDistanceInCm(&ultraSonicFront.interface);
-        __no_operation();
+//        uint32_t ultraSonicCheck = UltraSonic_GetUltraSonicDistanceInCm(&ultraSonicFront.interface);
+//        __no_operation();
         if(start)
         {
 //            Camera_SpinelVC076_Run(&cam);
