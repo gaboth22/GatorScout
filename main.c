@@ -21,13 +21,13 @@
 #include "Camera_SpinelVC0706.h"
 #include "Uart_Usca0.h"
 #include "Uart_Usca3.h"
-//#include "UltraSonic.h"
 #include "DmaController_MSP432.h"
 #include "ImageForwardingController.h"
 #include "CommunicationArbiter.h"
 #include "uart.h"
 #include "Adc_Precision14.h"
 #include "DistanceSensor_SharpGP2Y0A41SK0F.h"
+#include "DistanceSensor_UltraSonicHCSR01.h"
 #include "UltrasonicSensorCommon.h"
 
 static bool start;
@@ -120,6 +120,12 @@ void main(void)
 
     UltrasonicSensorCommon_t *ultrasonicCommon =  UltrasonicSensorCommon_Init(timerModule);
 
+    DistanceSensor_UltraSonicHCSR01_t rightUltraSonic;
+    DistanceSensor_UltraSonicHCSR01_Init(&rightUltraSonic, UltrasonicSensorChannel_Right);
+
+    DistanceSensor_UltraSonicHCSR01_t leftUltraSonic;
+    DistanceSensor_UltraSonicHCSR01_Init(&leftUltraSonic, UltrasonicSensorChannel_Left);
+
     EnableInterrupts();
 
 //    MotorController_Forward(&motorController, 75*2);
@@ -131,8 +137,9 @@ void main(void)
         TimerModule_Run(timerModule);
         Application_Run(&application);
 //        MotorController_Run(&motorController);
-//        uint32_t ultraSonicCheck = UltraSonic_GetUltraSonicDistanceInCm(&ultraSonicFront.interface);
-//        __no_operation();
+           DistanceInCm_t rightUltraSonicCheck = DistanceSensor_GetDistanceInCm(&rightUltraSonic.interface);
+           DistanceInCm_t leftUltraSonicCheck = DistanceSensor_GetDistanceInCm(&leftUltraSonic.interface);
+        __no_operation();
         if(start)
         {
 //            Camera_SpinelVC076_Run(&cam);

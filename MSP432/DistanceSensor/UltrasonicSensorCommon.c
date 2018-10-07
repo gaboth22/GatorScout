@@ -216,7 +216,10 @@ void TA2_0_IRQHandler(void)
                 if(IsP5B0FallingEdge())
                 {
                     StopTimerA20();
-                    instance.rightChannelCount = instance.runningCount;
+                    if(instance.runningCount > 10)
+                    {
+                        instance.rightChannelCount = instance.runningCount;
+                    }
                     instance.runningCount = 0;
                     instance.currentChannel = UltrasonicSensorChannel_Left;
                 }
@@ -228,7 +231,10 @@ void TA2_0_IRQHandler(void)
                 if(IsP5B1FallingEdge())
                 {
                     StopTimerA20();
-                    instance.leftChannelCount = instance.runningCount;
+                    if(instance.runningCount > 10)
+                    {
+                        instance.leftChannelCount = instance.runningCount;
+                    }
                     instance.runningCount = 0;
                     instance.currentChannel = UltrasonicSensorChannel_Right;
                 }
