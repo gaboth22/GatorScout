@@ -31,6 +31,6 @@ UltrasonicSensorCommon_t * UltrasonicSensorCommon_Init(TimerModule_t *timerModul
 /*
  * Get the distance for an ultrasonic channel
  */
-DistanceInCm_t GetDistanceForChannel(UltrasonicSensorChannel_t channel);
+DistanceInCm_t UltrasonicSensorCommon_GetDistanceForChannel(UltrasonicSensorCommon_t *instance, UltrasonicSensorChannel_t channel);
 
 #endif

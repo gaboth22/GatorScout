@@ -8,8 +8,9 @@ typedef struct
 {
     I_DistanceSensor_t interface;
     UltrasonicSensorChannel_t currentChannel;
+    UltrasonicSensorCommon_t *ultraSonicCommon;
 } DistanceSensor_UltraSonicHCSR01_t;
 
-void DistanceSensor_UltraSonicHCSR01_Init(DistanceSensor_UltraSonicHCSR01_t *instance, UltrasonicSensorChannel_t currentChannel);
+void DistanceSensor_UltraSonicHCSR01_Init(DistanceSensor_UltraSonicHCSR01_t *instance, UltrasonicSensorChannel_t currentChannel, UltrasonicSensorCommon_t *ultraSonicCommon);
 
 #endif

@@ -121,10 +121,10 @@ void main(void)
     UltrasonicSensorCommon_t *ultrasonicCommon =  UltrasonicSensorCommon_Init(timerModule);
 
     DistanceSensor_UltraSonicHCSR01_t rightUltraSonic;
-    DistanceSensor_UltraSonicHCSR01_Init(&rightUltraSonic, UltrasonicSensorChannel_Right);
+    DistanceSensor_UltraSonicHCSR01_Init(&rightUltraSonic, UltrasonicSensorChannel_Right, ultrasonicCommon);
 
     DistanceSensor_UltraSonicHCSR01_t leftUltraSonic;
-    DistanceSensor_UltraSonicHCSR01_Init(&leftUltraSonic, UltrasonicSensorChannel_Left);
+    DistanceSensor_UltraSonicHCSR01_Init(&leftUltraSonic, UltrasonicSensorChannel_Left, ultrasonicCommon);
 
     EnableInterrupts();
 

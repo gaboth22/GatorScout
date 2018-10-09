@@ -138,8 +138,9 @@ UltrasonicSensorCommon_t * UltrasonicSensorCommon_Init(TimerModule_t *timerModul
 }
 
 __attribute__((ramfunc))
-DistanceInCm_t GetDistanceForChannel(UltrasonicSensorChannel_t channel)
+DistanceInCm_t UltrasonicSensorCommon_GetDistanceForChannel(UltrasonicSensorCommon_t *_instance, UltrasonicSensorChannel_t channel)
 {
+    IGNORE(_instance);
     DistanceInCm_t toReturn = 0;
 
     switch(channel)
