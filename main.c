@@ -25,6 +25,7 @@
 #include "ImageForwardingController.h"
 #include "CommunicationArbiter.h"
 #include "uart.h"
+#include "RemoteMotionController.h"
 #include "Adc_Precision14.h"
 #include "DistanceSensor_SharpGP2Y0A41SK0F.h"
 #include "DistanceSensor_UltraSonicHCSR01.h"
@@ -64,6 +65,7 @@ void main(void)
 //
     Application_t application;
     Application_Init(&application, timerModule, gpioGroup);
+
 //
 //    I_Pwm_t *leftFwd = Pwm_TA0CCR1_Init(GpioPwm1_P2B4);
 //    I_Pwm_t *rightBwd = Pwm_TA0CCR2_Init(GpioPwm2_P2B5);
@@ -136,19 +138,20 @@ void main(void)
     {
         TimerModule_Run(timerModule);
         Application_Run(&application);
-//        MotorController_Run(&motorController);
-           DistanceInCm_t rightUltraSonicCheck = DistanceSensor_GetDistanceInCm(&rightUltraSonic.interface);
-           DistanceInCm_t leftUltraSonicCheck = DistanceSensor_GetDistanceInCm(&leftUltraSonic.interface);
-        __no_operation();
+        MotorController_Run(&motorController);
+
         if(start)
         {
-//            Camera_SpinelVC076_Run(&cam);
-//            ImageForwardingController_Run(&imgFwdController);
-//            CommunicationArbiter_Run(&arbiter);
+          Camera_SpinelVC076_Run(&cam);
+          ImageForwardingController_Run(&imgFwdController);
+          CommunicationArbiter_Run(&arbiter);
+          RemoteMotionController_Run(&remoteMotionController);
         }
-
-        DistanceInCm_t test = DistanceSensor_GetDistanceInCm(&irSensor.interface);
-        __no_operation();
+      
+          DistanceInCm_t rightUltraSonicCheck = DistanceSensor_GetDistanceInCm(&rightUltraSonic.interface);
+          DistanceInCm_t leftUltraSonicCheck = DistanceSensor_GetDistanceInCm(&leftUltraSonic.interface);
+          DistanceInCm_t test = DistanceSensor_GetDistanceInCm(&irSensor.interface);
+          __no_operation();
     }
 }
 
