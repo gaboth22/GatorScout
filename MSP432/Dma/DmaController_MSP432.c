@@ -168,8 +168,23 @@ static void SetAndStartChannelTrasfer(
     }
 }
 
+static void ClearState(I_DmaController_t *_instance)
+{
+    IGNORE(_instance);
+    DMA_clearInterruptFlag(1);
+    instance.uartUsca0ChannelDmaChunkCount = 0;
+    DMA_clearInterruptFlag(6);
+    instance.uartUsca3ChannelDmaChunkCount = 0;
+}
+
 static const DmaControllerApi_t api =
-    { SetChannelSourceTrigger, SetChannelTransferConfig, SetAndStartChannelTrasfer, GetOnChannelTransferDoneEvent };
+    {
+      SetChannelSourceTrigger,
+      SetChannelTransferConfig,
+      SetAndStartChannelTrasfer,
+      GetOnChannelTransferDoneEvent,
+      ClearState
+    };
 
 I_DmaController_t * DmaController_MSP432_Init(void)
 {
