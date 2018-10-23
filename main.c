@@ -30,13 +30,20 @@
 #include "DistanceSensor_SharpGP2Y0A41SK0F.h"
 #include "DistanceSensor_UltraSonicHCSR01.h"
 #include "UltrasonicSensorCommon.h"
+#include "LcdDisplayParallel2Line.h"
+#include "LcdDisplayController.h"
+#include "SensorDataController.h"
 
 static bool start;
+static LcdDisplayController_t lcdDisplayController;
 
 static void StartImageCap(void *context)
 {
     IGNORE(context);
     start = true;
+//    LcdDisplayController_ClearDiplay(&lcdDisplayController);
+//    LcdDisplayController_SetCursorIndex(&lcdDisplayController, 1, 0);
+//    LcdDisplayController_WriteString(&lcdDisplayController, "A", 1);
 }
 
 static uint8_t image[4096] = { 0 };
@@ -54,11 +61,11 @@ void main(void)
     TimerModule_t *timerModule = TimerModule_Init(oneMsTimeSource);
     I_GpioGroup_t *gpioGroup = GpioGroup_MSP432_Init();
 
-
     PidController_t rightPid;
     PidController_Init(&rightPid, 1, 0, 0.0, 25, 60); //working
 
     PidController_t leftPid;
+
     PidController_Init(&leftPid, 1, 0, 0, 25, 60);
 
     Application_t application;
@@ -134,6 +141,41 @@ void main(void)
     TimerOneShot_Init(&timer, timerModule, 8000, StartImageCap, &cam);
     TimerOneShot_Start(&timer);
 
+    LcdDisplayParallel2Line_t *lcdDisplay = LcdDisplayParallel2Line_Init(
+        gpioGroup,
+        GpioLcdD7,
+        GpioLcdD6,
+        GpioLcdD5,
+        GpioLcdD4,
+        GpioLcdEn,
+        GpioLcdRw,
+        GpioLcdRs,
+        GpioLcdD7,
+        timerModule);
+
+    LcdDisplayController_Init(&lcdDisplayController, &lcdDisplay->interface);
+
+    I_Adc_t *adc14 = Adc_Precision14_Init();
+    DistanceSensor_SharpGP2Y0A41SK0F_t frontIrSensor;
+    DistanceSensor_SharpGP2Y0A41SK0F_Init(&frontIrSensor, adc14);
+
+    UltrasonicSensorCommon_t *ultraSonicCommon = UltrasonicSensorCommon_Init(timerModule);
+
+    DistanceSensor_UltraSonicHCSR01_t ultraSonicLeft;
+    DistanceSensor_UltraSonicHCSR01_Init(&ultraSonicLeft, UltrasonicSensorChannel_Left, ultraSonicCommon);
+
+    DistanceSensor_UltraSonicHCSR01_t ultraSonicRight;
+    DistanceSensor_UltraSonicHCSR01_Init(&ultraSonicRight, UltrasonicSensorChannel_Right, ultraSonicCommon);
+
+    SensorDataController_t sensorDataOutputToLcdController;
+    SensorDataController_Init(
+            &sensorDataOutputToLcdController,
+            &frontIrSensor,
+            &ultraSonicLeft,
+            &ultraSonicRight,
+            timerModule,
+            &lcdDisplayController);
+
     EnableInterrupts();
 
     while(1)
@@ -152,6 +194,10 @@ void main(void)
           RemoteMotionController_Run(&remoteMotionController);
           CommunicationArbiter_Run(&arbiter);
         }
+
+        DistanceInCm_t leftUltraSonicDistanceCm = DistanceSensor_GetDistanceInCm(&ultraSonicLeft.interface);
+        DistanceInCm_t rightUltraSonicDistanceCm = DistanceSensor_GetDistanceInCm(&ultraSonicRight.interface);
+        __no_operation();
     }
 }
 
