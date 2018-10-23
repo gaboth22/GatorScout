@@ -123,18 +123,6 @@ void main(void)
         &imgFwdController,
         timerModule);
 
-    I_Adc_t *adc = Adc_Precision14_Init();
-    DistanceSensor_SharpGP2Y0A41SK0F_t frontDistSensor;
-    DistanceSensor_SharpGP2Y0A41SK0F_Init(&frontDistSensor, adc);
-
-    UltrasonicSensorCommon_t *ultrasonicCommon = UltrasonicSensorCommon_Init(timerModule);
-
-    DistanceSensor_UltraSonicHCSR01_t leftDistSensor;
-    DistanceSensor_UltraSonicHCSR01_Init(&leftDistSensor, UltrasonicSensorChannel_Left, ultrasonicCommon);
-
-    DistanceSensor_UltraSonicHCSR01_t rightDistSensor;
-    DistanceSensor_UltraSonicHCSR01_Init(&rightDistSensor, UltrasonicSensorChannel_Right, ultrasonicCommon);
-
     start = false;
 
     TimerOneShot_t timer;
@@ -156,8 +144,8 @@ void main(void)
     LcdDisplayController_Init(&lcdDisplayController, &lcdDisplay->interface);
 
     I_Adc_t *adc14 = Adc_Precision14_Init();
-    DistanceSensor_SharpGP2Y0A41SK0F_t frontIrSensor;
-    DistanceSensor_SharpGP2Y0A41SK0F_Init(&frontIrSensor, adc14);
+    DistanceSensor_SharpGP2Y0A41SK0F_t frontDistSensor;
+    DistanceSensor_SharpGP2Y0A41SK0F_Init(&frontDistSensor, adc14);
 
     UltrasonicSensorCommon_t *ultraSonicCommon = UltrasonicSensorCommon_Init(timerModule);
 
@@ -170,7 +158,7 @@ void main(void)
     SensorDataController_t sensorDataOutputToLcdController;
     SensorDataController_Init(
             &sensorDataOutputToLcdController,
-            &frontIrSensor,
+            &frontDistSensor,
             &ultraSonicLeft,
             &ultraSonicRight,
             timerModule,
@@ -183,10 +171,10 @@ void main(void)
         TimerModule_Run(timerModule);
         Application_Run(&application);
         MotorController_Run(&motorController);
-        DistanceInCm_t frontDistance = DistanceSensor_GetDistanceInCm(&frontDistSensor.interface);
-        DistanceInCm_t leftDistance = DistanceSensor_GetDistanceInCm(&leftDistSensor.interface);
-        DistanceInCm_t rightDistance = DistanceSensor_GetDistanceInCm(&rightDistSensor.interface);
-
+//        DistanceInCm_t frontDistance = DistanceSensor_GetDistanceInCm(&frontDistSensor.interface);
+//        DistanceInCm_t leftDistance = DistanceSensor_GetDistanceInCm(&leftDistSensor.interface);
+//        DistanceInCm_t rightDistance = DistanceSensor_GetDistanceInCm(&rightDistSensor.interface);
+//        __no_operation();
         if(start)
         {
           Camera_SpinelVC076_Run(&cam);
@@ -195,9 +183,9 @@ void main(void)
           CommunicationArbiter_Run(&arbiter);
         }
 
-        DistanceInCm_t leftUltraSonicDistanceCm = DistanceSensor_GetDistanceInCm(&ultraSonicLeft.interface);
-        DistanceInCm_t rightUltraSonicDistanceCm = DistanceSensor_GetDistanceInCm(&ultraSonicRight.interface);
-        __no_operation();
+//        DistanceInCm_t leftUltraSonicDistanceCm = DistanceSensor_GetDistanceInCm(&ultraSonicLeft.interface);
+//        DistanceInCm_t rightUltraSonicDistanceCm = DistanceSensor_GetDistanceInCm(&ultraSonicRight.interface);
+//        __no_operation();
     }
 }
 
