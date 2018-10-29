@@ -88,7 +88,7 @@ void main(void)
         &leftPid,
         &rightPid,
         timerModule,
-        65);
+        70);
 
     I_Uart_t *uart = Uart_Usca0_Init();
     I_DmaController_t *dma = DmaController_MSP432_Init();
@@ -158,9 +158,9 @@ void main(void)
     SensorDataController_t sensorDataOutputToLcdController;
     SensorDataController_Init(
             &sensorDataOutputToLcdController,
-            &frontDistSensor,
-            &ultraSonicLeft,
-            &ultraSonicRight,
+            &frontDistSensor.interface,
+            &ultraSonicLeft.interface,
+            &ultraSonicRight.interface,
             timerModule,
             &lcdDisplayController);
 
