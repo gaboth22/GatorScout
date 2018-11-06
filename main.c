@@ -93,6 +93,7 @@ void main(void)
     I_Uart_t *uart = Uart_Usca0_Init();
     I_DmaController_t *dma = DmaController_MSP432_Init();
     I_Uart_t *wifiUart = Uart_Usca3_Init();
+//    Uart_UpdateBaud(wifiUart, 115200);
 
     Camera_SpinelVC0706_t cam;
     Camera_SpinelVC076_Init(
@@ -111,10 +112,11 @@ void main(void)
             wifiUart,
             dma,
             DmaChannel_UartUsca3Tx,
-            (void *) UART_getTransmitBufferAddressForDMA(EUSCI_A3_BASE));
+            (void *) UART_getTransmitBufferAddressForDMA(EUSCI_A3_BASE),
+            timerModule);
 
     RemoteMotionController_t remoteMotionController;
-    RemoteMotionController_Init(&remoteMotionController, &motorController, wifiUart, 2 * 75, 90, 90);
+    RemoteMotionController_Init(&remoteMotionController, &motorController, wifiUart, 27, 90, 90, timerModule);
 
     CommunicationArbiter_t arbiter;
     CommunicationArbiter_Init(
@@ -178,8 +180,6 @@ void main(void)
         if(start)
         {
           Camera_SpinelVC076_Run(&cam);
-          ImageForwardingController_Run(&imgFwdController);
-          RemoteMotionController_Run(&remoteMotionController);
           CommunicationArbiter_Run(&arbiter);
         }
 

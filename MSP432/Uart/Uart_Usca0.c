@@ -4,12 +4,14 @@
 #include "types.h"
 #include "utils.h"
 #include "msp.h"
+#include "HardwareUtils.h"
 
 typedef struct
 {
     I_Uart_t interface;
     Event_Synchronous_t onByteReceived;
     uint8_t receivedByte;
+    bool acquired;
 } Uart_Usca0_t;
 
 static Uart_Usca0_t instance;
@@ -54,13 +56,41 @@ static void EnableRx(I_Uart_t *_instance)
     EUSCI_A0->IE |= EUSCI_A_IE_RXIE;        // Enable USCI_A0 RX interrupt
 }
 
+static bool Acquire(I_Uart_t *_instance)
+{
+    IGNORE(_instance);
+    DisableInterrupts();
+
+    if(!instance.acquired)
+    {
+        instance.acquired = true;
+    }
+    else
+    {
+        instance.acquired = false;
+    }
+
+    EnableInterrupts();
+    return instance.acquired;
+}
+
+static void Release(I_Uart_t *_instance)
+{
+    IGNORE(_instance);
+    DisableInterrupts();
+    instance.acquired = false;
+    EnableInterrupts();
+}
+
 static const UartApi_t api =
-    { SendByte, GetOnByteReceivedEvent, UpdateBaud, DisableRx, EnableRx };
+    { SendByte, GetOnByteReceivedEvent, UpdateBaud, DisableRx, EnableRx, Acquire, Release };
 
 I_Uart_t * Uart_Usca0_Init(void)
 {
     Event_Synchronous_Init(&instance.onByteReceived);
     instance.interface.api = &api;
+
+    instance.acquired = false;
 
     P1->SEL0 |= BIT2 | BIT3;  // Set pin as secondary function
     EUSCI_A0->CTLW0 |= EUSCI_A_CTLW0_SWRST; // Put eUSCI in reset

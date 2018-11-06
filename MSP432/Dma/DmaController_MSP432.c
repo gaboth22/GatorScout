@@ -46,6 +46,8 @@ static void SetChannelSourceTrigger(I_DmaController_t *instance, uint32_t channe
 
     Uassert((channel < DmaChannel_Max));
 
+    DMA_enableModule();
+
     switch(channel)
     {
         case DmaChannel_UartUsca0Rx:
@@ -188,7 +190,7 @@ static const DmaControllerApi_t api =
 
 I_DmaController_t * DmaController_MSP432_Init(void)
 {
-    DMA_enableModule();
+//    DMA_enableModule();
     DMA_setControlBase(MSP432ControlTable);
     Event_Synchronous_Init(&instance.onUartUsca0TrxDone);
     Event_Synchronous_Init(&instance.onUartUsca3TrxDone);
@@ -229,6 +231,7 @@ void DMA_INT1_IRQHandler(void)
         case 4:
             DMA_clearInterruptFlag(1);
             instance.uartUsca0ChannelDmaChunkCount = 0;
+            DMA_disableModule();
             Event_Publish(&instance.onUartUsca0TrxDone.interface, NULL);
             break;
     }
@@ -266,6 +269,7 @@ void DMA_INT2_IRQHandler(void)
         case 4:
             DMA_clearInterruptFlag(6);
             instance.uartUsca3ChannelDmaChunkCount = 0;
+            DMA_disableModule();
             Event_Publish(&instance.onUartUsca3TrxDone.interface, NULL);
             break;
     }
