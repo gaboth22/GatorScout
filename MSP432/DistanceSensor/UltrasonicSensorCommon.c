@@ -92,7 +92,8 @@ static UltrasonicSensorCommon_t instance;
 
 enum
 {
-    PeriodToDoUltrasonicCycleMs = 10
+    PeriodToDoUltrasonicCycleMs = 10,
+    DistanceCorrectionCm = 5,
 };
 
 static void StartUltrasonicCycle(void *context)
@@ -146,10 +147,10 @@ DistanceInCm_t UltrasonicSensorCommon_GetDistanceForChannel(UltrasonicSensorComm
     switch(channel)
     {
         case UltrasonicSensorChannel_Right:
-            toReturn = (DistanceInCm_t)(((instance.rightChannelCount) / 2) * 0.034);
+            toReturn = (DistanceInCm_t)((((instance.rightChannelCount) / 2) * 0.034) - DistanceCorrectionCm);
             break;
         case UltrasonicSensorChannel_Left:
-            toReturn = (DistanceInCm_t)(((instance.leftChannelCount) / 2) * 0.034);
+            toReturn = (DistanceInCm_t)((((instance.leftChannelCount) / 2) * 0.034) - DistanceCorrectionCm);
             break;
         default:
             break;
