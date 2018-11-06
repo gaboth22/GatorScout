@@ -33,20 +33,21 @@
 #include "LcdDisplayParallel2Line.h"
 #include "LcdDisplayController.h"
 #include "SensorDataController.h"
+#include "ScoutingController.h"
+#include "WayPointProvider_Unscouted.h"
+#include "PathFinder_AStar.h"
+#include "DistanceProviderCm.h"
+#include "MotorControllerBusyChecker_WheelEncoders.h"
+#include "MotorDriveCorrectionController.h"
 
-static bool start;
-static LcdDisplayController_t lcdDisplayController;
+TimerOneShot_t timer;
+TimerModule_t *timerModule;
 
 static void StartImageCap(void *context)
 {
-    IGNORE(context);
-    start = true;
-//    LcdDisplayController_ClearDiplay(&lcdDisplayController);
-//    LcdDisplayController_SetCursorIndex(&lcdDisplayController, 1, 0);
-//    LcdDisplayController_WriteString(&lcdDisplayController, "A", 1);
+    RECAST(scoutingController, context, ScoutingController_t *);
+    ScoutingController_Start(scoutingController);
 }
-
-static uint8_t image[4096] = { 0 };
 
 void main(void)
 {
@@ -55,93 +56,14 @@ void main(void)
     StartGlobalPwmTick();
 
     I_Interrupt_t *oneMsInterrupt = Interrupt_1MsSystemTicks_Init();
-    I_Interrupt_t *rightPinInterruptWheelEncoder = Interrupt_WheelEncoder_Init(GpioWheelEncoder1);
-    I_Interrupt_t *leftPinInterruptWheelEncoder = Interrupt_WheelEncoder_Init(GpioWheelEncoder2);
     I_TimeSource_t *oneMsTimeSource = TimeSource_1MsSystemTick_Init(oneMsInterrupt);
-    TimerModule_t *timerModule = TimerModule_Init(oneMsTimeSource);
+    timerModule = TimerModule_Init(oneMsTimeSource);
     I_GpioGroup_t *gpioGroup = GpioGroup_MSP432_Init();
 
-    PidController_t rightPid;
-    PidController_Init(&rightPid, 1, 0, 0.0, 25, 60); //working
-
-    PidController_t leftPid;
-
-    PidController_Init(&leftPid, 1, 0, 0, 25, 60);
-
-    Application_t application;
-    Application_Init(&application, timerModule, gpioGroup);
-
-    I_Pwm_t *leftFwd = Pwm_TA0CCR1_Init(GpioPwm1_P2B4);
-    I_Pwm_t *rightBwd = Pwm_TA0CCR2_Init(GpioPwm2_P2B5);
-    I_Pwm_t *leftBwd = Pwm_TA0CCR3_Init(GpioPwm3_P2B6);
-    I_Pwm_t *rightFwd = Pwm_TA0CCR4_Init(GpioPwm4_P2B7);
-
-    MotorController_t motorController;
-    MotorController_Init(
-        &motorController,
-        Interrupt_GetOnInterruptEvent(leftPinInterruptWheelEncoder),
-        Interrupt_GetOnInterruptEvent(rightPinInterruptWheelEncoder),
-        leftFwd,
-        leftBwd,
-        rightFwd,
-        rightBwd,
-        &leftPid,
-        &rightPid,
-        timerModule,
-        70);
-
-    I_Uart_t *uart = Uart_Usca0_Init();
-    I_DmaController_t *dma = DmaController_MSP432_Init();
-    I_Uart_t *wifiUart = Uart_Usca3_Init();
-
-    Camera_SpinelVC0706_t cam;
-    Camera_SpinelVC076_Init(
-            &cam,
-            uart,
-            dma,
-            DmaChannel_UartUsca0Rx,
-            timerModule,
-            (void *) UART_getReceiveBufferAddressForDMA(EUSCI_A0_BASE),
-            image);
-
-    ImageForwardingController_t imgFwdController;
-    ImageForwardingController_Init(
-            &imgFwdController,
-            &cam.interface,
-            wifiUart,
-            dma,
-            DmaChannel_UartUsca3Tx,
-            (void *) UART_getTransmitBufferAddressForDMA(EUSCI_A3_BASE));
-
-    RemoteMotionController_t remoteMotionController;
-    RemoteMotionController_Init(&remoteMotionController, &motorController, wifiUart, 2 * 75, 90, 90);
-
-    CommunicationArbiter_t arbiter;
-    CommunicationArbiter_Init(
-        &arbiter,
-        &remoteMotionController,
-        &imgFwdController,
-        timerModule);
-
-    start = false;
-
-    TimerOneShot_t timer;
-    TimerOneShot_Init(&timer, timerModule, 8000, StartImageCap, &cam);
-    TimerOneShot_Start(&timer);
-
-    LcdDisplayParallel2Line_t *lcdDisplay = LcdDisplayParallel2Line_Init(
-        gpioGroup,
-        GpioLcdD7,
-        GpioLcdD6,
-        GpioLcdD5,
-        GpioLcdD4,
-        GpioLcdEn,
-        GpioLcdRw,
-        GpioLcdRs,
-        GpioLcdD7,
-        timerModule);
-
-    LcdDisplayController_Init(&lcdDisplayController, &lcdDisplay->interface);
+    I_Interrupt_t *rightPinInterruptWheelEncoder =
+        Interrupt_WheelEncoder_Init(GpioWheelEncoder1);
+    I_Interrupt_t *leftPinInterruptWheelEncoder =
+        Interrupt_WheelEncoder_Init(GpioWheelEncoder2);
 
     I_Adc_t *adc14 = Adc_Precision14_Init();
     DistanceSensor_SharpGP2Y0A41SK0F_t frontDistSensor;
@@ -155,14 +77,105 @@ void main(void)
     DistanceSensor_UltraSonicHCSR01_t ultraSonicRight;
     DistanceSensor_UltraSonicHCSR01_Init(&ultraSonicRight, UltrasonicSensorChannel_Right, ultraSonicCommon);
 
-    SensorDataController_t sensorDataOutputToLcdController;
-    SensorDataController_Init(
-            &sensorDataOutputToLcdController,
-            &frontDistSensor.interface,
-            &ultraSonicLeft.interface,
-            &ultraSonicRight.interface,
-            timerModule,
-            &lcdDisplayController);
+    PidController_t rightPid;
+    PidController_Init(&rightPid, 1, 0, 0.0, 25, 60);
+
+    PidController_t leftPid;
+    PidController_Init(&leftPid, 1, 0, 0, 25, 60);
+
+    Application_t application;
+    Application_Init(&application, timerModule, gpioGroup);
+
+    I_Pwm_t *leftFwd = Pwm_TA0CCR1_Init(GpioPwm1_P2B4);
+    I_Pwm_t *rightBwd = Pwm_TA0CCR2_Init(GpioPwm2_P2B5);
+    I_Pwm_t *leftBwd = Pwm_TA0CCR3_Init(GpioPwm3_P2B6);
+    I_Pwm_t *rightFwd = Pwm_TA0CCR4_Init(GpioPwm4_P2B7);
+
+    MotorControllerBusyChecker_WheelEncoders_t motorContorllerBusyChecker;
+    MotorControllerBusyChecker_WheelEncoders_Init(
+        &motorContorllerBusyChecker,
+        Interrupt_GetOnInterruptEvent(rightPinInterruptWheelEncoder),
+        Interrupt_GetOnInterruptEvent(leftPinInterruptWheelEncoder),
+        timerModule);
+
+    MotorDriveCorrectionController_t correctinController;
+    MotorDriveCorrectionController_Init(
+        &correctinController,
+        &ultraSonicLeft.interface,
+        &ultraSonicRight.interface);
+
+    MotorController_t motorController;
+    MotorController_Init(
+        &motorController,
+        Interrupt_GetOnInterruptEvent(leftPinInterruptWheelEncoder),
+        Interrupt_GetOnInterruptEvent(rightPinInterruptWheelEncoder),
+        leftFwd,
+        leftBwd,
+        rightFwd,
+        rightBwd,
+        &leftPid,
+        &rightPid,
+        timerModule,
+        60,
+        &motorContorllerBusyChecker.interface,
+        &correctinController);
+
+    LcdDisplayParallel2Line_t *lcdDisplay = LcdDisplayParallel2Line_Init(
+        gpioGroup,
+        GpioLcdD7,
+        GpioLcdD6,
+        GpioLcdD5,
+        GpioLcdD4,
+        GpioLcdEn,
+        GpioLcdRw,
+        GpioLcdRs,
+        GpioLcdD7,
+        timerModule);
+
+    LcdDisplayController_t lcdDisplayController;
+    LcdDisplayController_Init(&lcdDisplayController, &lcdDisplay->interface);
+
+    DistanceProviderCm_t distanceProvider;
+    DistanceProviderCm_Init(
+        &distanceProvider,
+        Interrupt_GetOnInterruptEvent(leftPinInterruptWheelEncoder),
+        27,
+        6);
+
+    WayPointProvider_Unscouted_t waypointProvider;
+    ScoutingController_t scoutingController;
+
+    WayPointProvider_Unscouted_Init(
+        &waypointProvider,
+        &scoutingController.visitedAreasGrid,
+        &scoutingController.blockedAreasGrid);
+
+    PathFinder_AStar_t pathFinder;
+    PathFinder_AStar_Init(&pathFinder);
+
+    MapBuilder_t mapBuilder;
+    MapBuilder_Init(
+        &mapBuilder,
+        &distanceProvider,
+        &ultraSonicLeft.interface,
+        &ultraSonicRight.interface);
+
+    ScoutingController_Init(
+        &scoutingController,
+        &frontDistSensor.interface,
+        &ultraSonicLeft.interface,
+        &ultraSonicRight.interface,
+        &motorController.interface,
+        &distanceProvider,
+        &waypointProvider.interface,
+        &pathFinder.interface,
+        32,
+        32,
+        &lcdDisplayController,
+        &mapBuilder);
+
+    TimerOneShot_Init(&timer, timerModule, 7000, StartImageCap, &scoutingController);
+    TimerOneShot_Start(&timer);
 
     EnableInterrupts();
 
@@ -170,22 +183,8 @@ void main(void)
     {
         TimerModule_Run(timerModule);
         Application_Run(&application);
-        MotorController_Run(&motorController);
-//        DistanceInCm_t frontDistance = DistanceSensor_GetDistanceInCm(&frontDistSensor.interface);
-//        DistanceInCm_t leftDistance = DistanceSensor_GetDistanceInCm(&leftDistSensor.interface);
-//        DistanceInCm_t rightDistance = DistanceSensor_GetDistanceInCm(&rightDistSensor.interface);
-//        __no_operation();
-        if(start)
-        {
-          Camera_SpinelVC076_Run(&cam);
-          ImageForwardingController_Run(&imgFwdController);
-          RemoteMotionController_Run(&remoteMotionController);
-          CommunicationArbiter_Run(&arbiter);
-        }
-
-//        DistanceInCm_t leftUltraSonicDistanceCm = DistanceSensor_GetDistanceInCm(&ultraSonicLeft.interface);
-//        DistanceInCm_t rightUltraSonicDistanceCm = DistanceSensor_GetDistanceInCm(&ultraSonicRight.interface);
-//        __no_operation();
+        MotorController_Run(&motorController.interface);
+        ScoutingController_Run(&scoutingController);
     }
 }
 
