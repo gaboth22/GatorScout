@@ -34,7 +34,7 @@ static void UpdateBaud(I_Uart_t *_instance, Baud_t baud)
     Uassert((baud == 115200));
 
     IGNORE(_instance);
-    EUSCI_A0->IE &= ~(EUSCI_A_IE_RXIE);      // disable USCI_A0 RX interrupt
+    EUSCI_A0->IE &= ~(EUSCI_A_IE_RXIE);     // disable USCI_A0 RX interrupt
     EUSCI_A0->CTLW0 |= EUSCI_A_CTLW0_SWRST; // Put eUSCI in reset
     EUSCI_A0->CTLW0 = EUSCI_A_CTLW0_SWRST | EUSCI_B_CTLW0_SSEL__SMCLK; // SMCLK as source
     EUSCI_A0->BRW = 26;
@@ -59,27 +59,26 @@ static void EnableRx(I_Uart_t *_instance)
 static bool Acquire(I_Uart_t *_instance)
 {
     IGNORE(_instance);
-    DisableInterrupts();
+//    DisableInterrupts();
+
+    bool gotIt = false;
 
     if(!instance.acquired)
     {
+        gotIt = true;
         instance.acquired = true;
     }
-    else
-    {
-        instance.acquired = false;
-    }
 
-    EnableInterrupts();
-    return instance.acquired;
+//    EnableInterrupts();
+    return gotIt;
 }
 
 static void Release(I_Uart_t *_instance)
 {
     IGNORE(_instance);
-    DisableInterrupts();
+//    DisableInterrupts();
     instance.acquired = false;
-    EnableInterrupts();
+//    EnableInterrupts();
 }
 
 static const UartApi_t api =

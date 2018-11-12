@@ -59,7 +59,7 @@ static void EnableRx(I_Uart_t *_instance)
 static bool Acquire(I_Uart_t *_instance)
 {
     IGNORE(_instance);
-    DisableInterrupts();
+//    DisableInterrupts();
 
     bool gotIt = false;
 
@@ -69,16 +69,16 @@ static bool Acquire(I_Uart_t *_instance)
         instance.acquired = true;
     }
 
-    EnableInterrupts();
+//    EnableInterrupts();
     return gotIt;
 }
 
 static void Release(I_Uart_t *_instance)
 {
     IGNORE(_instance);
-    DisableInterrupts();
+//    DisableInterrupts();
     instance.acquired = false;
-    EnableInterrupts();
+//    EnableInterrupts();
 }
 
 static const UartApi_t api =

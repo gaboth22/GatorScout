@@ -27,14 +27,16 @@ typedef struct
     I_DmaController_t interface;
     Event_Synchronous_t onUartUsca0TrxDone;
     Event_Synchronous_t onUartUsca3TrxDone;
-    uint32_t uartUsca0ChannelTrxSize;
-    uint32_t uartUsca3ChannelTrxSize;
+    uint32_t uartUsca0ChannelDataLeftToTransfer;
+    uint32_t uartUsca3ChannelDataLeftToTransfer;
     uint8_t uartUsca0ChannelDmaChunkCount;
     uint8_t uartUsca3ChannelDmaChunkCount;
     void *uartUsca0ChannelSrc;
     void *uartUsca0ChannelDst;
     void *uartUsca3ChannelSrc;
     void *uartUsca3ChannelDst;
+    bool uartUsca0TrxDone;
+    bool uartUsca3TrxDone;
 } DmaController_MSP432_t;
 
 static DmaController_MSP432_t instance;
@@ -45,8 +47,6 @@ static void SetChannelSourceTrigger(I_DmaController_t *instance, uint32_t channe
     IGNORE(sourceTriggerConfig);
 
     Uassert((channel < DmaChannel_Max));
-
-    DMA_enableModule();
 
     switch(channel)
     {
@@ -125,17 +125,19 @@ static void SetAndStartChannelTrasfer(
     {
         case DmaChannel_UartUsca0Rx:
         {
-            instance.uartUsca0ChannelDmaChunkCount = 0;
-            instance.uartUsca0ChannelTrxSize = transferSize;
+            instance.uartUsca0ChannelDmaChunkCount = 1;
             instance.uartUsca0ChannelSrc = src;
             instance.uartUsca0ChannelDst = dst;
+            instance.uartUsca0ChannelDataLeftToTransfer =
+                (transferSize > MaxDmaTrxSize) ? (transferSize - MaxDmaTrxSize) : transferSize;
+            instance.uartUsca0TrxDone = false;
 
             DMA_setChannelTransfer(
               (DMA_CH1_EUSCIA0RX | UDMA_PRI_SELECT),
               UDMA_MODE_BASIC,
               src,
               dst,
-              MaxDmaTrxSize);
+              (transferSize > MaxDmaTrxSize) ? MaxDmaTrxSize : transferSize);
 
             DMA_assignInterrupt(INT_DMA_INT1, 1);
             DMA_clearInterruptFlag(DMA_CH1_EUSCIA0RX & 0x0F);
@@ -146,17 +148,19 @@ static void SetAndStartChannelTrasfer(
 
         case DmaChannel_UartUsca3Tx:
         {
-            instance.uartUsca3ChannelDmaChunkCount = 0;
-            instance.uartUsca3ChannelTrxSize = transferSize;
+            instance.uartUsca3ChannelDmaChunkCount = 1;
             instance.uartUsca3ChannelSrc = src;
             instance.uartUsca3ChannelDst = dst;
+            instance.uartUsca3ChannelDataLeftToTransfer =
+                (transferSize > MaxDmaTrxSize) ? (transferSize - MaxDmaTrxSize) : transferSize;
+            instance.uartUsca3TrxDone = false;
 
             DMA_setChannelTransfer(
               (DMA_CH6_EUSCIA3TX | UDMA_PRI_SELECT),
               UDMA_MODE_BASIC,
               src,
               dst,
-              MaxDmaTrxSize);
+              (transferSize > MaxDmaTrxSize) ? MaxDmaTrxSize : transferSize);
 
             DMA_assignInterrupt(INT_DMA_INT2, 6);
             DMA_clearInterruptFlag(DMA_CH6_EUSCIA3TX & 0x0F);
@@ -173,10 +177,7 @@ static void SetAndStartChannelTrasfer(
 static void ClearState(I_DmaController_t *_instance)
 {
     IGNORE(_instance);
-    DMA_clearInterruptFlag(1);
-    instance.uartUsca0ChannelDmaChunkCount = 0;
-    DMA_clearInterruptFlag(6);
-    instance.uartUsca3ChannelDmaChunkCount = 0;
+    Uassert(false);
 }
 
 static const DmaControllerApi_t api =
@@ -190,87 +191,82 @@ static const DmaControllerApi_t api =
 
 I_DmaController_t * DmaController_MSP432_Init(void)
 {
-//    DMA_enableModule();
+    DMA_enableModule();
     DMA_setControlBase(MSP432ControlTable);
+    Interrupt_setPriority(INT_DMA_INT1, 0);
+    Interrupt_setPriority(INT_DMA_INT2, 1);
     Event_Synchronous_Init(&instance.onUartUsca0TrxDone);
     Event_Synchronous_Init(&instance.onUartUsca3TrxDone);
-    instance.uartUsca0ChannelTrxSize = 0;
     instance.interface.api = &api;
     return &instance.interface;
 }
 
 void DMA_INT1_IRQHandler(void)
 {
+    if(instance.uartUsca0TrxDone)
+    {
+        DMA_clearInterruptFlag(1);
+        Event_Publish(&instance.onUartUsca0TrxDone.interface, NULL);
+    }
+
     instance.uartUsca0ChannelDmaChunkCount++;
 
-    switch(instance.uartUsca0ChannelDmaChunkCount)
+    if(instance.uartUsca0ChannelDataLeftToTransfer > MaxDmaTrxSize && !instance.uartUsca0TrxDone)
     {
-        /*
-         * The purpose of DMA this channel is to receive data that is always known to be
-         * between 3.5K and 3.6K, so no need for further generalization
-         */
-        case 1:
-        case 2:
-            DMA_setChannelTransfer(
-              (DMA_CH1_EUSCIA0RX | UDMA_PRI_SELECT),
-              UDMA_MODE_BASIC,
-              instance.uartUsca0ChannelSrc,
-              (void *) (((uint8_t *)instance.uartUsca0ChannelDst) + instance.uartUsca0ChannelDmaChunkCount * MaxDmaTrxSize),
-              MaxDmaTrxSize);
-            DMA_enableChannel(1);
-            break;
-        case 3:
-            DMA_setChannelTransfer(
-              (DMA_CH1_EUSCIA0RX | UDMA_PRI_SELECT),
-              UDMA_MODE_BASIC,
-              instance.uartUsca0ChannelSrc,
-              (void *) (((uint8_t *)instance.uartUsca0ChannelDst) + instance.uartUsca0ChannelDmaChunkCount * MaxDmaTrxSize),
-              instance.uartUsca0ChannelTrxSize % MaxDmaTrxSize);
-            DMA_enableChannel(1);
-            break;
-        case 4:
-            DMA_clearInterruptFlag(1);
-            instance.uartUsca0ChannelDmaChunkCount = 0;
-            DMA_disableModule();
-            Event_Publish(&instance.onUartUsca0TrxDone.interface, NULL);
-            break;
+        DMA_setChannelTransfer(
+          (DMA_CH1_EUSCIA0RX | UDMA_PRI_SELECT),
+          UDMA_MODE_BASIC,
+          instance.uartUsca0ChannelSrc,
+          (void *) (((uint8_t *)instance.uartUsca0ChannelDst) + instance.uartUsca0ChannelDmaChunkCount * MaxDmaTrxSize),
+          MaxDmaTrxSize);
+        DMA_enableChannel(1);
     }
+    else if(instance.uartUsca0ChannelDataLeftToTransfer <= MaxDmaTrxSize && !instance.uartUsca0TrxDone)
+    {
+        DMA_setChannelTransfer(
+          (DMA_CH1_EUSCIA0RX | UDMA_PRI_SELECT),
+          UDMA_MODE_BASIC,
+          instance.uartUsca0ChannelSrc,
+          (void *) (((uint8_t *)instance.uartUsca0ChannelDst) + instance.uartUsca0ChannelDmaChunkCount * MaxDmaTrxSize),
+          instance.uartUsca0ChannelDataLeftToTransfer);
+        instance.uartUsca0TrxDone = true;
+        DMA_enableChannel(1);
+    }
+
+    instance.uartUsca0ChannelDataLeftToTransfer -= MaxDmaTrxSize;
 }
 
 void DMA_INT2_IRQHandler(void)
 {
     instance.uartUsca3ChannelDmaChunkCount++;
 
-    switch(instance.uartUsca3ChannelDmaChunkCount)
+    if(instance.uartUsca3TrxDone)
     {
-        /*
-         * The purpose of DMA this channel is to send data that is always known to be
-         * between 3.5K and 3.6K, so no need for further generalization
-         */
-        case 1:
-        case 2:
-            DMA_setChannelTransfer(
-              (DMA_CH6_EUSCIA3TX | UDMA_PRI_SELECT),
-              UDMA_MODE_BASIC,
-              (void *) (((uint8_t *)instance.uartUsca3ChannelSrc) + instance.uartUsca3ChannelDmaChunkCount * MaxDmaTrxSize),
-              instance.uartUsca3ChannelDst,
-              MaxDmaTrxSize);
-            DMA_enableChannel(6);
-            break;
-        case 3:
-            DMA_setChannelTransfer(
-              (DMA_CH6_EUSCIA3TX | UDMA_PRI_SELECT),
-              UDMA_MODE_BASIC,
-              (void *) (((uint8_t *)instance.uartUsca0ChannelDst) + instance.uartUsca3ChannelDmaChunkCount * MaxDmaTrxSize),
-              instance.uartUsca3ChannelDst,
-              instance.uartUsca3ChannelTrxSize % MaxDmaTrxSize);
-            DMA_enableChannel(6);
-            break;
-        case 4:
-            DMA_clearInterruptFlag(6);
-            instance.uartUsca3ChannelDmaChunkCount = 0;
-            DMA_disableModule();
-            Event_Publish(&instance.onUartUsca3TrxDone.interface, NULL);
-            break;
+        DMA_clearInterruptFlag(6);
+        Event_Publish(&instance.onUartUsca3TrxDone.interface, NULL);
     }
+
+    if(instance.uartUsca3ChannelDataLeftToTransfer > MaxDmaTrxSize && !instance.uartUsca3TrxDone)
+    {
+        DMA_setChannelTransfer(
+          (DMA_CH6_EUSCIA3TX | UDMA_PRI_SELECT),
+          UDMA_MODE_BASIC,
+          (void *) (((uint8_t *)instance.uartUsca3ChannelSrc) + instance.uartUsca3ChannelDmaChunkCount * MaxDmaTrxSize),
+          instance.uartUsca3ChannelDst,
+          MaxDmaTrxSize);
+        DMA_enableChannel(6);
+    }
+    else if(instance.uartUsca3ChannelDataLeftToTransfer <= MaxDmaTrxSize && !instance.uartUsca3TrxDone)
+    {
+        DMA_setChannelTransfer(
+          (DMA_CH6_EUSCIA3TX | UDMA_PRI_SELECT),
+          UDMA_MODE_BASIC,
+          (void *) (((uint8_t *)instance.uartUsca3ChannelSrc) + instance.uartUsca3ChannelDmaChunkCount * MaxDmaTrxSize),
+          instance.uartUsca3ChannelDst,
+          instance.uartUsca3ChannelDataLeftToTransfer);
+        instance.uartUsca3TrxDone = true;
+        DMA_enableChannel(6);
+    }
+
+    instance.uartUsca3ChannelDataLeftToTransfer -= MaxDmaTrxSize;
 }

@@ -41,12 +41,9 @@ static void StartImageCap(void *context)
 {
     IGNORE(context);
     start = true;
-//    LcdDisplayController_ClearDiplay(&lcdDisplayController);
-//    LcdDisplayController_SetCursorIndex(&lcdDisplayController, 1, 0);
-//    LcdDisplayController_WriteString(&lcdDisplayController, "A", 1);
 }
 
-static uint8_t image[4096] = { 0 };
+static uint8_t image[5120] = { 0 };
 
 void main(void)
 {
@@ -93,27 +90,28 @@ void main(void)
     I_Uart_t *uart = Uart_Usca0_Init();
     I_DmaController_t *dma = DmaController_MSP432_Init();
     I_Uart_t *wifiUart = Uart_Usca3_Init();
-//    Uart_UpdateBaud(wifiUart, 115200);
+//    Uart_UpdateBaud(uart, 115200);
 
     Camera_SpinelVC0706_t cam;
     Camera_SpinelVC076_Init(
-            &cam,
-            uart,
-            dma,
-            DmaChannel_UartUsca0Rx,
-            timerModule,
-            (void *) UART_getReceiveBufferAddressForDMA(EUSCI_A0_BASE),
-            image);
+        &cam,
+        uart,
+        dma,
+        DmaChannel_UartUsca0Rx,
+        timerModule,
+        (void *) UART_getReceiveBufferAddressForDMA(EUSCI_A0_BASE),
+        image,
+        CameraType_5MP);
 
     ImageForwardingController_t imgFwdController;
     ImageForwardingController_Init(
-            &imgFwdController,
-            &cam.interface,
-            wifiUart,
-            dma,
-            DmaChannel_UartUsca3Tx,
-            (void *) UART_getTransmitBufferAddressForDMA(EUSCI_A3_BASE),
-            timerModule);
+        &imgFwdController,
+        &cam.interface,
+        wifiUart,
+        dma,
+        DmaChannel_UartUsca3Tx,
+        (void *) UART_getTransmitBufferAddressForDMA(EUSCI_A3_BASE),
+        timerModule);
 
     RemoteMotionController_t remoteMotionController;
     RemoteMotionController_Init(&remoteMotionController, &motorController, wifiUart, 27, 90, 90, timerModule);
