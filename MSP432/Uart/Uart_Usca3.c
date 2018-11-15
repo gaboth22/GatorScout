@@ -5,6 +5,14 @@
 #include "Uassert.h"
 #include "msp.h"
 #include "HardwareUtils.h"
+#include "TimerPeriodic.h"
+#include "Queue.h"
+
+enum
+{
+    MaxUart3IncomingBuffSize = 256,
+    PeriodToPubishReceivedByteMs = 1
+};
 
 typedef struct
 {
@@ -12,6 +20,9 @@ typedef struct
     Event_Synchronous_t onByteReceived;
     uint8_t receivedByte;
     bool acquired;
+    uint8_t receiveQueueBuffer[MaxUart3IncomingBuffSize];
+    Queue_t receiveQueue;
+    TimerPeriodic_t publishReceivedByteTimer;
 } Uart_Usca3_t;
 
 static Uart_Usca3_t instance;
@@ -34,32 +45,34 @@ static void UpdateBaud(I_Uart_t *_instance, Baud_t baud)
     IGNORE(_instance);
 
     Uassert((baud == 115200));
-    EUSCI_A3->IE &= ~(EUSCI_A_IE_RXIE);      // disable USCI_A0 RX interrupt
+
+    EUSCI_A3->IE &= ~(EUSCI_A_IE_RXIE);     // Disable USCI_A0 RX interrupt
     EUSCI_A3->CTLW0 |= EUSCI_A_CTLW0_SWRST; // Put eUSCI in reset
     EUSCI_A3->CTLW0 = EUSCI_A_CTLW0_SWRST | EUSCI_B_CTLW0_SSEL__SMCLK; // SMCLK as source
     EUSCI_A3->BRW = 26;
     EUSCI_A3->MCTLW = (0xD6 << EUSCI_A_MCTLW_BRS_OFS) | EUSCI_A_MCTLW_OS16; // Fix up for 115.2K baud
     EUSCI_A3->CTLW0 &= ~EUSCI_A_CTLW0_SWRST; // Initialize eUSCI
-    EUSCI_A3->IFG &= ~EUSCI_A_IFG_RXIFG;     // Clear eUSCI RX interrupt flag
     EUSCI_A3->IE |= EUSCI_A_IE_RXIE;         // Enable USCI_A3 RX interrupt
 }
 
 static void DisableRx(I_Uart_t *_instance)
 {
     IGNORE(_instance);
-    EUSCI_A3->IE &= ~EUSCI_A_IE_RXIE;       // Disable USCI_A0 RX interrupt
+    Uassert(false);
+    EUSCI_A3->IE &= ~EUSCI_A_IE_RXIE; // Disable USCI_A3 RX interrupt
 }
 
 static void EnableRx(I_Uart_t *_instance)
 {
     IGNORE(_instance);
-    EUSCI_A3->IE |= EUSCI_A_IE_RXIE;        // Enable USCI_A0 RX interrupt
+    Uassert(false);
+    EUSCI_A3->IE |= EUSCI_A_IE_RXIE; // Enable USCI_A3 RX interrupt
 }
 
 static bool Acquire(I_Uart_t *_instance)
 {
     IGNORE(_instance);
-//    DisableInterrupts();
+    DisableInterrupts();
 
     bool gotIt = false;
 
@@ -69,22 +82,30 @@ static bool Acquire(I_Uart_t *_instance)
         instance.acquired = true;
     }
 
-//    EnableInterrupts();
+    EnableInterrupts();
     return gotIt;
 }
 
 static void Release(I_Uart_t *_instance)
 {
     IGNORE(_instance);
-//    DisableInterrupts();
     instance.acquired = false;
-//    EnableInterrupts();
+}
+
+static void PublishReceivedByte(void *context)
+{
+    IGNORE(context);
+    if(Queue_Size(&instance.receiveQueue) > 0)
+    {
+        Queue_Pop(&instance.receiveQueue, &instance.receivedByte);
+        Event_Publish(&instance.onByteReceived.interface, &instance.receivedByte);
+    }
 }
 
 static const UartApi_t api =
     { SendByte, GetOnByteReceivedEvent, UpdateBaud, DisableRx, EnableRx, Acquire, Release };
 
-I_Uart_t * Uart_Usca3_Init(void)
+I_Uart_t * Uart_Usca3_Init(TimerModule_t *timerModule)
 {
     Event_Synchronous_Init(&instance.onByteReceived);
     instance.interface.api = &api;
@@ -96,15 +117,23 @@ I_Uart_t * Uart_Usca3_Init(void)
     EUSCI_A3->CTLW0 = EUSCI_A_CTLW0_SWRST | EUSCI_B_CTLW0_SSEL__SMCLK; // SMCLK as source
 
     // Default initialization to 921,600 baud
-//    EUSCI_A3->BRW = 3;
-//    EUSCI_A3->MCTLW = (4 << EUSCI_A_MCTLW_BRF_OFS) | (0x04 << EUSCI_A_MCTLW_BRS_OFS) | EUSCI_A_MCTLW_OS16;
+    // EUSCI_A3->BRW = 3;
+    // EUSCI_A3->MCTLW = (4 << EUSCI_A_MCTLW_BRF_OFS) | (0x04 << EUSCI_A_MCTLW_BRS_OFS) | EUSCI_A_MCTLW_OS16;
 
     // Default initialization to 1,000,000 baud
     EUSCI_A3->BRW = 3;
     EUSCI_A3->MCTLW = EUSCI_A_MCTLW_OS16;
-    EUSCI_A3->CTLW0 &= ~EUSCI_A_CTLW0_SWRST; // Initialize eUSCI
-    EUSCI_A3->IFG &= ~EUSCI_A_IFG_RXIFG;    // Clear eUSCI RX interrupt flag
+    EUSCI_A3->CTLW0 &= ~EUSCI_A_CTLW0_SWRST;// Initialize eUSCI
     EUSCI_A3->IE |= EUSCI_A_IE_RXIE;        // Enable USCI_A3 RX interrupt
+
+    TimerPeriodic_Init(
+        &instance.publishReceivedByteTimer,
+        timerModule,
+        PeriodToPubishReceivedByteMs,
+        PublishReceivedByte,
+        NULL);
+
+    TimerPeriodic_Start(&instance.publishReceivedByteTimer);
 
     NVIC->ISER[0] |= 1 << ((EUSCIA3_IRQn) & 31);
 
@@ -115,7 +144,7 @@ void EUSCIA3_IRQHandler(void)
 {
     if (EUSCI_A3->IFG & EUSCI_A_IFG_RXIFG)
     {
-        instance.receivedByte = EUSCI_A3->RXBUF;
-        Event_Publish(&instance.onByteReceived.interface, &instance.receivedByte);
+        uint8_t inByte = EUSCI_A3->RXBUF;
+        Queue_Push(&instance.receiveQueue, &inByte);
     }
 }

@@ -21,9 +21,13 @@
     TIMER_A0->CCR[0] = 48000; \
 
 #define EnableInterrupts() \
+    CS->KEY = CS_KEY_VAL; \
     __enable_irq(); \
+    CS->KEY = 0; \
 
 #define DisableInterrupts() \
+    CS->KEY = CS_KEY_VAL; \
     __disable_irq(); \
+    CS->KEY = 0; \
 
 #endif

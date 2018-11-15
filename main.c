@@ -54,7 +54,7 @@ static void StartImageCap(void *context)
 }
 
 void main(void)
-{
+ {
     StopWatchdog();
     SetClockTo48Mhz();
     StartGlobalPwmTick();
@@ -64,10 +64,15 @@ void main(void)
     timerModule = TimerModule_Init(oneMsTimeSource);
     I_GpioGroup_t *gpioGroup = GpioGroup_MSP432_Init();
 
+    I_Uart_t *cameraUart = Uart_Usca0_Init(timerModule);
+    I_Uart_t *wifiUart = Uart_Usca3_Init(timerModule);
+
     I_Interrupt_t *rightPinInterruptWheelEncoder =
         Interrupt_WheelEncoder_Init(GpioWheelEncoder1);
     I_Interrupt_t *leftPinInterruptWheelEncoder =
         Interrupt_WheelEncoder_Init(GpioWheelEncoder2);
+
+    I_DmaController_t *dmaController = DmaController_MSP432_Init();
 
     I_Adc_t *adc14 = Adc_Precision14_Init();
     DistanceSensor_SharpGP2Y0A41SK0F_t frontDistSensor;
@@ -108,15 +113,11 @@ void main(void)
         &ultraSonicLeft.interface,
         &ultraSonicRight.interface);
 
-    I_Uart_t *uart = Uart_Usca0_Init();
-    I_DmaController_t *dma = DmaController_MSP432_Init();
-    I_Uart_t *wifiUart = Uart_Usca3_Init();
-
     Camera_SpinelVC0706_t cam;
     Camera_SpinelVC076_Init(
         &cam,
-        uart,
-        dma,
+        cameraUart,
+        dmaController,
         DmaChannel_UartUsca0Rx,
         timerModule,
         (void *) UART_getReceiveBufferAddressForDMA(EUSCI_A0_BASE),
@@ -128,7 +129,7 @@ void main(void)
         &imgFwdController,
         &cam.interface,
         wifiUart,
-        dma,
+        dmaController,
         DmaChannel_UartUsca3Tx,
         (void *) UART_getTransmitBufferAddressForDMA(EUSCI_A3_BASE),
         timerModule);
@@ -153,7 +154,7 @@ void main(void)
     RemoteMotionController_Init(&remoteMotionController, &motorController.interface, wifiUart, 27, 90, 90, timerModule);
 
     MapSender_t mapSender;
-    MapSender_Init(&mapSender, wifiUart);
+    MapSender_Init(&mapSender, wifiUart, dmaController, DmaChannel_UartUsca3Tx, (void *) UART_getTransmitBufferAddressForDMA(EUSCI_A3_BASE), timerModule);
 
     LcdDisplayParallel2Line_t *lcdDisplay = LcdDisplayParallel2Line_Init(
         gpioGroup,
@@ -204,8 +205,8 @@ void main(void)
         &distanceProvider,
         &waypointProvider.interface,
         &pathFinder.interface,
-        50,
-        0,
+        32,
+        32,
         &lcdDisplayController,
         &mapBuilder);
 
@@ -244,8 +245,8 @@ void main(void)
         if(start)
         {
             ScoutingController_Run(&scoutingController);
-            Camera_SpinelVC076_Run(&cam);
             CommunicationArbiter_Run(&arbiter);
+            Camera_SpinelVC076_Run(&cam);
         }
     }
 }

@@ -6,6 +6,8 @@
 enum
 {
     DmaChannel_UartUsca0Rx = 0,
+    DmaChannel_UartUsca0Tx,
+    DmaChannel_UartUsca3Rx,
     DmaChannel_UartUsca3Tx,
     DmaChannel_Max
 };

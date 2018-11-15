@@ -75,6 +75,27 @@ I_GpioGroup_t * GpioGroup_MSP432_Init(void)
 {
     uint8_t channel;
 
+    P1->DIR = 0xFF;
+    P1->OUT = 0x00;
+    P2->DIR = 0xFF;
+    P2->OUT = 0x00;
+    P3->DIR = 0xFF;
+    P3->OUT = 0x00;
+    P4->DIR = 0xFF;
+    P4->OUT = 0x00;
+    P5->DIR = 0xFF;
+    P5->OUT = 0x00;
+    P6->DIR = 0xFF;
+    P6->OUT = 0x00;
+    P7->DIR = 0xFF;
+    P7->OUT = 0x00;
+    P8->DIR = 0xFF;
+    P8->OUT = 0x00;
+    P9->DIR = 0xFF;
+    P9->OUT = 0x00;
+    P10->DIR = 0xFF;
+    P10->OUT = 0x00;
+
     for(channel = 0; channel < GpioMax; channel++)
     {
         switch(channel)
