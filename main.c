@@ -39,6 +39,7 @@
 #include "DistanceProviderCm.h"
 #include "MotorControllerBusyChecker_WheelEncoders.h"
 #include "MotorDriveCorrectionController.h"
+#include "WayPointProvider_Simple.h"
 
 TimerOneShot_t timer;
 TimerModule_t *timerModule;
@@ -189,6 +190,13 @@ void main(void)
     PathFinder_AStar_t pathFinder;
     PathFinder_AStar_Init(&pathFinder);
 
+    WayPointProvider_Simple_t simpleWP;
+    WayPointProvider_Simple(
+        &simpleWP,
+        &ultraSonicLeft.interface,
+        &frontDistSensor.interface,
+        &ultraSonicRight.interface);
+
     MapBuilder_t mapBuilder;
     MapBuilder_Init(
         &mapBuilder,
@@ -203,7 +211,7 @@ void main(void)
         &ultraSonicRight.interface,
         &motorController.interface,
         &distanceProvider,
-        &waypointProvider.interface,
+        &simpleWP.interface,
         &pathFinder.interface,
         32,
         32,
