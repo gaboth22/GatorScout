@@ -40,6 +40,7 @@
 #include "MotorControllerBusyChecker_WheelEncoders.h"
 #include "MotorDriveCorrectionController.h"
 #include "WayPointProvider_Simple.h"
+#include "ImageRecognitionController.h"
 
 TimerOneShot_t timer;
 TimerModule_t *timerModule;
@@ -87,11 +88,17 @@ void main(void)
     DistanceSensor_UltraSonicHCSR01_t ultraSonicRight;
     DistanceSensor_UltraSonicHCSR01_Init(&ultraSonicRight, UltrasonicSensorChannel_Right, ultraSonicCommon);
 
+//    PidController_t rightPid;
+//    PidController_Init(&rightPid, 1, 0, 0.0, 25, 60);
+//
+//    PidController_t leftPid;
+//    PidController_Init(&leftPid, 1, 0, 0, 25, 60);
+
     PidController_t rightPid;
-    PidController_Init(&rightPid, 1, 0, 0.0, 25, 60);
+    PidController_Init(&rightPid, 1, 0, 0, 28, 90);
 
     PidController_t leftPid;
-    PidController_Init(&leftPid, 1, 0, 0, 25, 60);
+    PidController_Init(&leftPid, 1, 0, 0, 28, 90);
 
     Application_t application;
     Application_Init(&application, timerModule, gpioGroup);
@@ -204,6 +211,12 @@ void main(void)
         &ultraSonicLeft.interface,
         &ultraSonicRight.interface);
 
+    ImageRecognitionController_t imgRecognController;
+    ImageRecognitionController_Init(
+        &imgRecognController,
+        wifiUart,
+        timerModule);
+
     ScoutingController_Init(
         &scoutingController,
         &frontDistSensor.interface,
@@ -216,7 +229,9 @@ void main(void)
         32,
         32,
         &lcdDisplayController,
-        &mapBuilder);
+        &mapBuilder,
+        timerModule,
+        &imgRecognController);
 
     CommunicationArbiter_t arbiter;
     CommunicationArbiter_Init(
@@ -226,7 +241,8 @@ void main(void)
         &mapSender,
         &scoutingController.visitedAreasGrid,
         &scoutingController.blockedAreasGrid,
-        timerModule);
+        timerModule,
+        &imgRecognController);
 
     SensorDataController_t sensorDataDisplay;
     SensorDataController_Init(
