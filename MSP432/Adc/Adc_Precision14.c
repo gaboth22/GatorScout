@@ -4,17 +4,23 @@
 
 enum
 {
-    RunningAvgSize = 3
+    RunningAvgSize = 4
 };
 
 static I_Adc_t instance;
-static AdcCounts_t runningAverageData[RunningAvgSize] = { 0 };
-static uint8_t avgIndex = 0;
+static AdcCounts_t readings[RunningAvgSize] = { 0 };
+static uint8_t index = 0;
 
 static AdcCounts_t GetAdcCounts(I_Adc_t *_instance)
 {
     IGNORE(_instance);
-    return ((runningAverageData[0] + runningAverageData[1] + runningAverageData[2] ) / RunningAvgSize);
+    uint8_t i = 0;
+    AdcCounts_t val = 0;
+    for(i = 0; i < RunningAvgSize; i++)
+    {
+        val += readings[i];
+    }
+    return val / RunningAvgSize;
 }
 
 static const AdcApi_t api =
@@ -23,7 +29,6 @@ static const AdcApi_t api =
 I_Adc_t * Adc_Precision14_Init(void)
 {
     instance.api = &api;
-    avgIndex = 0;
     P8->SEL0 |= BIT6; // Set P8.6 as second peripheral usage - A19
     P8->SEL1 |= BIT6; // Set P8.6 as second peripheral usage - A19
     NVIC->ISER[0] |= 1 << ((ADC14_IRQn) & 31);
@@ -43,9 +48,9 @@ void ADC14_IRQHandler(void)
     if(ADC14->IV == 0x32)
     {
         ADC14->CLRIFGR0 = ADC14_CLRIFGR0_CLRIFG19;
-        runningAverageData[avgIndex] = (AdcCounts_t)ADC14->MEM[19];
-        avgIndex++;
-        avgIndex = avgIndex % RunningAvgSize;
+        readings[index] = (AdcCounts_t)ADC14->MEM[19];
+        index++;
+        index = index % RunningAvgSize;
         ADC14->CTL0 |= (ADC14_CTL0_ENC | ADC14_CTL0_SC);
     }
 }

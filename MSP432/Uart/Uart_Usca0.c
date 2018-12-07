@@ -92,11 +92,15 @@ static void Release(I_Uart_t *_instance)
 static void PublishReceivedByte(void *context)
 {
     IGNORE(context);
+    uint32_t interruptState;
+    interruptState = __get_PRIMASK();
+    __disable_irq();
     if(Queue_Size(&instance.receiveQueue) > 0)
     {
         Queue_Pop(&instance.receiveQueue, &instance.receivedByte);
         Event_Publish(&instance.onByteReceived.interface, &instance.receivedByte);
     }
+    __set_PRIMASK(interruptState);
 }
 
 static const UartApi_t api =

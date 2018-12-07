@@ -88,17 +88,11 @@ void main(void)
     DistanceSensor_UltraSonicHCSR01_t ultraSonicRight;
     DistanceSensor_UltraSonicHCSR01_Init(&ultraSonicRight, UltrasonicSensorChannel_Right, ultraSonicCommon);
 
-//    PidController_t rightPid;
-//    PidController_Init(&rightPid, 1, 0, 0.0, 25, 60);
-//
-//    PidController_t leftPid;
-//    PidController_Init(&leftPid, 1, 0, 0, 25, 60);
-
     PidController_t rightPid;
-    PidController_Init(&rightPid, 1, 0, 0, 28, 90);
+    PidController_Init(&rightPid, 0.52, 0.00009, 0.009, 28, 94);
 
     PidController_t leftPid;
-    PidController_Init(&leftPid, 1, 0, 0, 28, 90);
+    PidController_Init(&leftPid, 0.52, 0.00009, 0.009, 28, 94);
 
     Application_t application;
     Application_Init(&application, timerModule, gpioGroup);
@@ -226,8 +220,8 @@ void main(void)
         &distanceProvider,
         &simpleWP.interface,
         &pathFinder.interface,
-        32,
-        32,
+        40,
+        10,
         &lcdDisplayController,
         &mapBuilder,
         timerModule,

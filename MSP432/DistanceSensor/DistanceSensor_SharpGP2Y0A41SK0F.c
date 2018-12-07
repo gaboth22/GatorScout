@@ -6,8 +6,7 @@ __attribute__((ramfunc))
 static DistanceInCm_t GetDistanceFromCounts(AdcCounts_t counts)
 {
     // Equation obtained by plotting measured values
-//    return (DistanceInCm_t)((-1*(14.76)*log(counts)) + 121.65);
-    return (DistanceInCm_t)((-1*(10.83)*log(counts)) + 93.612);
+    return (DistanceInCm_t)(3372.4 * pow(counts, -0.812));
 }
 
 static DistanceInCm_t GetDistanceInCm(I_DistanceSensor_t *_instance)
